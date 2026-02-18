@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, RefreshCw, Download, Trash2, Upload, X } from 'lucide-react';
+import { Camera, RefreshCw, Download, Trash2, Upload, X, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
@@ -126,6 +126,28 @@ export default function PhotoBooth() {
     }, 1500);
   };
 
+  const handleShare = async (photo: Photo) => {
+    if (navigator.share) {
+      try {
+        // Convert base64 to File object for sharing
+        const res = await fetch(photo.url);
+        const blob = await res.blob();
+        const file = new File([blob], `nova-booth-${photo.id}.jpg`, { type: 'image/jpeg' });
+
+        await navigator.share({
+          files: [file],
+          title: 'Nova Booth Polaroid',
+          text: 'Check out my Polaroid from Nova Booth! 📸✨',
+        });
+      } catch (err) {
+        console.error("Sharing failed:", err);
+      }
+    } else {
+      // Fallback: Copy link or alert
+      alert("Sharing not supported on this browser. Try downloading the photo!");
+    }
+  };
+
   return (
     <div className="min-h-screen py-10 px-4 flex flex-col items-center">
       {/* The Classic Camera Body */}
@@ -225,6 +247,9 @@ export default function PhotoBooth() {
                 <div className="mt-4 flex justify-between items-center text-gray-400 italic text-sm font-serif">
                    <span>{new Date(photo.timestamp).toLocaleDateString()}</span>
                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleShare(photo)} className="text-emerald-500 hover:text-emerald-700">
+                        <Share2 size={18} />
+                      </button>
                       <button onClick={() => {
                         const link = document.createElement('a');
                         link.href = photo.url;
