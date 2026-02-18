@@ -34,7 +34,6 @@ export default function PhotoBooth() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Check for desktop view
   useEffect(() => {
     const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 1024);
     checkIsDesktop();
@@ -140,7 +139,7 @@ export default function PhotoBooth() {
     const gap = 20;
 
     canvas.width = frameWidth + (padding * 2);
-    canvas.height = (frameHeight * frames.length) + (gap * (frames.length - 1)) + (padding * 2) + 60;
+    canvas.height = (frameHeight * frames.length) + (gap * (frames.length - 1)) + (padding * 2) + 80;
 
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -152,8 +151,8 @@ export default function PhotoBooth() {
         ctx.drawImage(img, padding, padding + (i * (frameHeight + gap)), frameWidth, frameHeight);
         loadedCount++;
         if (loadedCount === frames.length) {
-          ctx.fillStyle = '#6b7280';
-          ctx.font = 'italic bold 24px sans-serif';
+          ctx.fillStyle = '#1a1a1a';
+          ctx.font = 'italic bold 28px "Comic Sans MS", cursive';
           ctx.textAlign = 'center';
           const bottomText = caption || `NOVA BOOTH // ${shootingStyle.toUpperCase()}`;
           ctx.fillText(bottomText, canvas.width / 2, canvas.height - 40);
@@ -237,107 +236,157 @@ export default function PhotoBooth() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-100 flex flex-col items-center">
+    <div className="min-h-screen flex flex-col items-center">
       <canvas ref={canvasRef} className="hidden" />
 
       {step === 'setup' && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-xl w-full space-y-10">
-          <header className="text-center">
-            <h1 className="text-6xl font-black italic tracking-tighter text-neutral-900">NOVA BOOTH</h1>
-            <p className="text-neutral-500 uppercase tracking-[0.3em] text-xs mt-2">Initialize Sequence</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-xl w-full space-y-10 animate-in fade-in zoom-in duration-500">
+          <header className="text-center relative">
+            <div className="absolute -top-6 -left-12 rotate-[-15deg] opacity-20 hidden md:block">
+               <Camera size={80} className="text-blue-500" />
+            </div>
+            <h1 className="text-7xl font-black italic tracking-tighter text-neutral-900 filter drop-shadow-lg">NOVA BOOTH</h1>
+            <p className="text-neutral-500 uppercase tracking-[0.4em] text-xs mt-2 font-black">Sketch Your Moment</p>
           </header>
-          <div className="w-full space-y-8 bg-white p-8 rounded-[40px] shadow-2xl border border-stone-200">
+
+          <div className="w-full space-y-8 sketch-card p-10 border-4 border-black">
             <div className="space-y-4">
-              <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2"><Layers size={12} /> Shooting Style</label>
-              <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                <Layers size={14} className="text-blue-500" /> Shooting Style
+              </label>
+              <div className="grid grid-cols-2 gap-4">
                 {(['classic', 'FQS', 'OFM', 'retro-grain'] as ShootingStyle[]).map(s => (
-                  <button key={s} onClick={() => setShootingStyle(s)} className={cn("py-4 rounded-2xl border-2 transition-all font-bold text-sm", shootingStyle === s ? "bg-blue-600 border-blue-600 text-white shadow-lg" : "border-stone-100 bg-stone-50 text-stone-600")}>{s.toUpperCase()}</button>
+                  <button key={s} onClick={() => setShootingStyle(s)} className={cn(
+                    "py-4 px-2 rounded-xl border-3 transition-all font-black text-sm",
+                    shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[4px_4px_0px_black] -translate-x-1 -translate-y-1" : "border-neutral-200 bg-white text-neutral-600 hover:border-black"
+                  )}>{s.toUpperCase()}</button>
                 ))}
               </div>
             </div>
+
             <div className="space-y-4">
-              <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2"><Grid size={12} /> Frame Count</label>
-              <div className="flex gap-3">
+              <label className="text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                <Grid size={14} className="text-blue-500" /> Frame Count
+              </label>
+              <div className="flex gap-4">
                 {[1, 2, 3, 4].map(n => (
-                  <button key={n} onClick={() => setFrameCount(n)} className={cn("flex-1 py-4 rounded-2xl border-2 transition-all font-black text-xl", frameCount === n ? "bg-neutral-900 border-neutral-900 text-white" : "border-stone-100 bg-stone-50 text-stone-600")}>{n}</button>
+                  <button key={n} onClick={() => setFrameCount(n)} className={cn(
+                    "flex-1 py-4 rounded-xl border-3 transition-all font-black text-xl",
+                    frameCount === n ? "bg-black border-black text-white shadow-[4px_4px_0px_rgba(0,0,0,0.3)] -translate-x-1 -translate-y-1" : "border-neutral-200 bg-white text-neutral-600 hover:border-black"
+                  )}>{n}</button>
                 ))}
               </div>
             </div>
+
             <div className="space-y-4 text-left">
-              <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2"><Camera size={12} /> Custom Caption (Optional)</label>
+              <label className="text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                <Camera size={14} className="text-blue-500" /> Custom Caption
+              </label>
               <input 
                 type="text" 
                 value={caption} 
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="Write something on your strip..."
-                className="w-full px-4 py-4 rounded-2xl border-2 border-stone-100 bg-stone-50 text-sm focus:border-blue-600 outline-none transition-all"
+                placeholder="Hand-write something here..."
+                className="w-full px-5 py-4 rounded-xl border-3 border-black bg-white text-sm font-bold focus:shadow-[4px_4px_0px_#3b82f6] outline-none transition-all placeholder:text-neutral-300"
               />
             </div>
-            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-3 text-xl transition-all active:scale-95 shadow-xl">JACK IN <ArrowRight /></button>
+
+            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black py-6 rounded-2xl flex items-center justify-center gap-3 text-2xl transition-all active:scale-95 border-3 border-black shadow-[6px_6px_0px_black] hover:shadow-[4px_4px_0px_black] hover:-translate-x-1 hover:-translate-y-1">
+              JACK IN <ArrowRight />
+            </button>
           </div>
         </div>
       )}
 
+      {/* --- SHOOTING --- */}
       {step === 'shooting' && (
-        <div className="flex-1 flex flex-col items-center py-12 px-4 w-full">
-           <div className="relative w-full max-w-[500px] aspect-[4/5.5] retro-body rounded-[50px] p-8 flex flex-col items-center border-b-[16px] border-stone-300 shadow-2xl">
+        <div className="flex-1 flex flex-col items-center py-12 px-4 w-full animate-in zoom-in duration-300">
+           <div className="relative w-full max-w-[500px] aspect-[4/5.8] retro-body p-8 flex flex-col items-center">
               <div className="w-full flex justify-between px-6 mb-8">
-                 <div className="w-12 h-12 bg-stone-800 rounded-lg border-2 border-stone-600 flex items-center justify-center"><div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /></div>
-                 <div className="w-10 h-24 rainbow-stripe rounded-full opacity-80" />
+                 <div className="w-14 h-14 bg-neutral-800 rounded-xl border-4 border-black flex items-center justify-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
+                 </div>
+                 <div className="w-10 h-24 rainbow-stripe" />
               </div>
-              <div className="relative w-72 h-72 rounded-full bg-black border-[12px] border-stone-200 shadow-2xl overflow-hidden">
-                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+
+              <div className="relative w-80 h-80 rounded-full bg-black border-8 border-black shadow-2xl overflow-hidden ring-12 ring-white/50">
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1] opacity-80 mix-blend-screen" />
                 {isFlashing && <div className="absolute inset-0 bg-white z-50" />}
-                {isCountingDown && <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-40 backdrop-blur-sm"><span className="text-white text-9xl font-black italic">{countdown}</span></div>}
+                {isCountingDown && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-40 backdrop-blur-[2px]">
+                    <span className="text-white text-[12rem] font-black italic drop-shadow-[0_10px_10px_black]">{countdown}</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 border-[30px] border-black/10 pointer-events-none" />
               </div>
+
               <div className="mt-12 flex flex-col items-center gap-4">
-                 <button onClick={runCaptureSequence} disabled={isCountingDown || capturedFrames.length >= frameCount} className="w-24 h-24 rounded-full bg-red-600 border-b-8 border-red-800 active:border-b-0 active:translate-y-2 shadow-2xl flex items-center justify-center disabled:opacity-50"><div className="w-16 h-16 rounded-full border-4 border-red-400/30" /></button>
-                 <p className="text-[10px] font-black tracking-[0.2em] text-stone-400 uppercase">{capturedFrames.length < frameCount ? `Capture ${capturedFrames.length + 1} of ${frameCount}` : 'Sequence Complete'}</p>
+                 <button 
+                  onClick={runCaptureSequence} 
+                  disabled={isCountingDown || capturedFrames.length >= frameCount} 
+                  className="w-24 h-24 rounded-full bg-red-500 border-4 border-black active:shadow-inner active:translate-y-1 shadow-[0_8px_0px_#991b1b] flex items-center justify-center disabled:opacity-50"
+                 >
+                   <div className="w-16 h-16 rounded-full border-4 border-white/20" />
+                 </button>
+                 <p className="text-xs font-black tracking-widest text-neutral-400 uppercase">
+                    {capturedFrames.length < frameCount ? `Take Shot ${capturedFrames.length + 1} of ${frameCount}` : 'Sequence Done!'}
+                 </p>
               </div>
-              <div className="absolute -right-12 top-1/4 flex flex-col gap-2 scale-75 lg:scale-100">
+
+              <div className="absolute -right-16 top-1/4 flex flex-col gap-3 scale-75 lg:scale-110">
                 {Array.from({ length: frameCount }).map((_, i) => (
-                  <div key={i} className="w-16 h-12 bg-white p-1 shadow-lg rounded-sm border border-stone-200">
-                    {capturedFrames[i] ? <img src={capturedFrames[i]} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-300">{i + 1}</div>}
+                  <div key={i} className="w-20 h-16 bg-white p-1 shadow-[5px_5px_0px_rgba(0,0,0,0.1)] rounded-sm border-2 border-black rotate-[-2deg] odd:rotate-[2deg]">
+                    {capturedFrames[i] ? (
+                      <img src={capturedFrames[i]} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-neutral-50 flex items-center justify-center text-xs font-black text-neutral-200 italic">{i + 1}</div>
+                    )}
                   </div>
                 ))}
               </div>
            </div>
-           <button onClick={() => setStep('setup')} className="mt-8 text-stone-400 font-bold flex items-center gap-2 hover:text-neutral-900 transition-colors"><RefreshCw size={16} /> Reset</button>
+           <button onClick={() => setStep('setup')} className="mt-12 text-neutral-400 font-black flex items-center gap-2 hover:text-black transition-colors uppercase tracking-widest text-xs">
+              <RefreshCw size={14} /> Back to Setup
+           </button>
         </div>
       )}
 
+      {/* --- LAB --- */}
       {step === 'lab' && (
-        <div className="flex-1 w-full max-w-6xl p-6 py-12 flex flex-col items-center space-y-12">
+        <div className="flex-1 w-full max-w-6xl p-6 py-12 flex flex-col items-center space-y-12 animate-in slide-in-from-bottom duration-500">
           <header className="text-center">
-            <h2 className="text-4xl font-black text-stone-900 uppercase italic">Your Strips</h2>
-            <p className="text-stone-500 uppercase tracking-widest text-xs mt-1 italic">Developed at Nova Lab</p>
+            <h2 className="text-5xl font-black text-neutral-900 uppercase italic drop-shadow-sm">LAB RESULTS</h2>
+            <p className="text-neutral-400 uppercase tracking-[0.4em] text-[10px] mt-2 font-black italic">Hand-crafted at Nova Studio</p>
           </header>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 items-start w-full">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 items-start w-full">
              {sessions.map(session => (
-               <div key={session.id} className="flex flex-col items-center space-y-6">
-                 <div className="photobooth-strip w-64 p-3 bg-white shadow-2xl border border-stone-200">
+               <div key={session.id} className="flex flex-col items-center space-y-8 animate-in zoom-in duration-500">
+                 <div className="photobooth-strip w-72 p-4 bg-white border-4 border-black shadow-[15px_15px_0px_rgba(0,0,0,0.05)] transform hover:rotate-0 transition-transform duration-300">
                     {session.frames.map((frame, i) => (
-                      <div key={i} className="strip-photo mb-3 last:mb-0 aspect-[4/3] bg-stone-900 overflow-hidden">
+                      <div key={i} className="strip-photo mb-3 last:mb-0 aspect-[4/3] bg-neutral-900 border-2 border-black">
                         <img src={frame} className="w-full h-full object-cover" />
                       </div>
                     ))}
-                    <div className="py-2 text-center border-t border-stone-100 mt-2">
-                       <p className="text-[9px] font-black text-stone-500 italic uppercase">
-                          {session.caption || `NOVA BOOTH // ${session.style.toUpperCase()}`}
+                    <div className="py-4 text-center border-t-3 border-black mt-3">
+                       <p className="text-sm font-black text-neutral-800 italic uppercase">
+                          {session.caption || `NOVA BOOTH // ${session.style}`}
                        </p>
                     </div>
                  </div>
                  <div className="flex gap-4">
                     {isDesktop && (
-                      <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-full shadow-lg text-blue-600 hover:scale-110 transition-all border border-stone-100"><Download size={24} /></button>
+                      <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-xl shadow-[4px_4px_0px_black] text-blue-500 border-3 border-black hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"><Download size={24} /></button>
                     )}
-                    <button onClick={() => handleShare(session)} className="bg-white p-4 rounded-full shadow-lg text-emerald-600 hover:scale-110 transition-all border border-stone-100"><Share2 size={24} /></button>
-                    <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded-full shadow-lg text-red-600 hover:scale-110 transition-all border border-stone-100"><Trash2 size={24} /></button>
+                    <button onClick={() => handleShare(session)} className="bg-white p-4 rounded-xl shadow-[4px_4px_0px_black] text-emerald-500 border-3 border-black hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"><Share2 size={24} /></button>
+                    <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded-xl shadow-[4px_4px_0px_black] text-red-500 border-3 border-black hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"><Trash2 size={24} /></button>
                  </div>
                </div>
              ))}
           </div>
-          <button onClick={() => { setCapturedFrames([]); setCaption(''); setStep('setup'); }} className="fixed bottom-8 bg-neutral-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 hover:scale-105 transition-all z-[100]"><Camera size={20} /> TAKE MORE SHOTS</button>
+          <button onClick={() => { setCapturedFrames([]); setCaption(''); setStep('setup'); }} className="fixed bottom-10 bg-black text-white px-10 py-5 rounded-2xl font-black shadow-[8px_8px_0px_#3b82f6] border-3 border-black flex items-center gap-3 hover:scale-105 transition-all z-[100] uppercase italic tracking-tighter">
+            <Camera size={24} /> Take More Shots
+          </button>
         </div>
       )}
     </div>

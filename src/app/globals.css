@@ -6,21 +6,39 @@
 }
 
 :root {
-  --background: #e5e7eb;
-  --foreground: #171717;
-  --polaroid-body: #f0f0f0;
-  --polaroid-black: #262626;
-  --polaroid-accent: #ef4444;
+  --background: #fdf6e3;
+  --foreground: #2d2d2d;
+  --polaroid-body: #ffffff;
+  --polaroid-black: #333333;
+  --polaroid-accent: #ff4757;
+  --sketch-border: #1a1a1a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
   overflow-x: hidden;
+  background-image: 
+    radial-gradient(#d1d1d1 1px, transparent 1px),
+    linear-gradient(to right, #e5e5e5 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e5e5 1px, transparent 1px);
+  background-size: 20px 20px, 40px 40px, 40px 40px;
 }
 
-/* Animations */
+/* Sketchy Borders & Illustrations */
+.sketch-border {
+  border: 3px solid var(--sketch-border);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+}
+
+.sketch-card {
+  border: 3px solid var(--sketch-border);
+  border-radius: 2% 98% 3% 97% / 96% 3% 97% 4%;
+  background: white;
+  box-shadow: 8px 8px 0px rgba(0,0,0,0.1);
+}
+
 @keyframes flash {
   0% { opacity: 0; }
   10% { opacity: 1; }
@@ -32,8 +50,8 @@ body {
 }
 
 @keyframes eject {
-  0% { transform: translateY(-50%) scale(0.8); opacity: 0; }
-  100% { transform: translateY(20px) scale(1); opacity: 1; }
+  0% { transform: translateY(-50%) rotate(0deg); opacity: 0; }
+  100% { transform: translateY(20px) rotate(-2deg); opacity: 1; }
 }
 
 .photo-eject {
@@ -43,17 +61,15 @@ body {
 /* Polaroid Styles */
 .retro-body {
   background: var(--polaroid-body);
-  box-shadow: 
-    inset -4px -4px 10px rgba(0,0,0,0.1),
-    inset 4px 4px 10px rgba(255,255,255,0.8),
-    0 20px 40px rgba(0,0,0,0.2);
+  border: 4px solid var(--sketch-border);
+  border-radius: 40px 40px 60px 60px !important;
+  box-shadow: 15px 15px 0px rgba(0,0,0,0.05);
 }
 
 .lens-glass {
-  background: radial-gradient(circle at 30% 30%, #444 0%, #111 70%, #000 100%);
-  box-shadow: 
-    inset 0 0 20px rgba(0,0,0,0.8),
-    0 0 10px rgba(255,255,255,0.2);
+  background: #222;
+  border: 6px solid var(--sketch-border);
+  box-shadow: inset 5px 5px 0px rgba(255,255,255,0.1);
 }
 
 .rainbow-stripe {
@@ -63,12 +79,32 @@ body {
     #ffee00 40% 60%, 
     #00c853 60% 80%, 
     #2196f3 80%);
+  border: 2px solid var(--sketch-border);
 }
 
 .polaroid-print {
   background: white;
   padding: 12px 12px 40px 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  border: 3px solid var(--sketch-border);
+  box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
+}
+
+/* Photobooth Strip Styles */
+.photobooth-strip {
+  background: white;
+  padding: 10px;
+  border: 4px solid var(--sketch-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.strip-photo {
+  aspect-ratio: 4/3;
+  width: 100%;
+  background: #f0f0f0;
+  border: 2px solid var(--sketch-border);
+  overflow: hidden;
 }
 
 .vintage-filter {
@@ -82,27 +118,4 @@ body {
   background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
   opacity: 0.1;
   pointer-events: none;
-}
-
-/* Photobooth Strip Styles */
-.photobooth-strip {
-  background: white;
-  padding: 10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.strip-photo {
-  aspect-ratio: 4/3;
-  width: 100%;
-  background: #111;
-  overflow: hidden;
-}
-
-.btn-mode-active {
-  background: var(--polaroid-black);
-  color: white;
-  border-color: var(--polaroid-black);
 }
