@@ -12,14 +12,18 @@ interface PhotoSession {
   frames: string[];
   style: ShootingStyle;
   timestamp: number;
+  caption?: string;
+  stripUrl?: string;
 }
 
 export default function PhotoBooth() {
   const [step, setStep] = useState<'setup' | 'shooting' | 'lab'>('setup');
   const [shootingStyle, setShootingStyle] = useState<ShootingStyle>('classic');
   const [frameCount, setFrameCount] = useState<number>(4);
+  const [caption, setCaption] = useState<string>('');
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
   const [sessions, setSessions] = useState<PhotoSession[]>([]);
+  const [isDesktop, setIsDesktop] = useState(false);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
@@ -29,6 +33,14 @@ export default function PhotoBooth() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Check for desktop view
+  useEffect(() => {
+    const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkIsDesktop();
+    window.addEventListener('resize', checkIsDesktop);
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
 
   const startCamera = useCallback(async () => {
     try {
@@ -95,7 +107,6 @@ export default function PhotoBooth() {
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
       ctx.restore();
       
-      // We apply filter to the canvas itself so the downloaded image has the style
       const filter = getStyleClass(shootingStyle);
       if (filter !== 'none') {
         ctx.filter = filter;
@@ -131,7 +142,6 @@ export default function PhotoBooth() {
     canvas.width = frameWidth + (padding * 2);
     canvas.height = (frameHeight * frames.length) + (gap * (frames.length - 1)) + (padding * 2) + 60;
 
-    // Background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -142,11 +152,11 @@ export default function PhotoBooth() {
         ctx.drawImage(img, padding, padding + (i * (frameHeight + gap)), frameWidth, frameHeight);
         loadedCount++;
         if (loadedCount === frames.length) {
-          // Add branding
-          ctx.fillStyle = '#e5e7eb';
-          ctx.font = 'bold 24px sans-serif';
+          ctx.fillStyle = '#6b7280';
+          ctx.font = 'italic bold 24px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(`NOVA BOOTH // ${shootingStyle.toUpperCase()}`, canvas.width / 2, canvas.height - 40);
+          const bottomText = caption || `NOVA BOOTH // ${shootingStyle.toUpperCase()}`;
+          ctx.fillText(bottomText, canvas.width / 2, canvas.height - 40);
 
           const stripUrl = canvas.toDataURL('image/jpeg', 0.9);
           setSessions(current => [{
@@ -154,8 +164,9 @@ export default function PhotoBooth() {
             frames: frames,
             style: shootingStyle,
             timestamp: Date.now(),
-            stripUrl: stripUrl // Added this to PhotoSession type logic
-          } as any, ...current]);
+            caption: caption,
+            stripUrl: stripUrl
+          }, ...current]);
         }
       };
       img.src = src;
@@ -189,7 +200,7 @@ export default function PhotoBooth() {
     startOne();
   };
 
-  const handleDownload = (session: any) => {
+  const handleDownload = (session: PhotoSession) => {
     const link = document.createElement('a');
     link.href = session.stripUrl || session.frames[0];
     link.download = `nova-strip-${session.id}.jpg`;
@@ -198,7 +209,7 @@ export default function PhotoBooth() {
     document.body.removeChild(link);
   };
 
-  const handleShare = async (session: any) => {
+  const handleShare = async (session: PhotoSession) => {
     const url = session.stripUrl || session.frames[0];
     if (navigator.share) {
       try {
@@ -212,7 +223,6 @@ export default function PhotoBooth() {
         });
       } catch (err) { console.error("Share failed", err); }
     } else {
-      // Fallback: download
       handleDownload(session);
     }
   };
@@ -252,6 +262,16 @@ export default function PhotoBooth() {
                   <button key={n} onClick={() => setFrameCount(n)} className={cn("flex-1 py-4 rounded-2xl border-2 transition-all font-black text-xl", frameCount === n ? "bg-neutral-900 border-neutral-900 text-white" : "border-stone-100 bg-stone-50 text-stone-600")}>{n}</button>
                 ))}
               </div>
+            </div>
+            <div className="space-y-4 text-left">
+              <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-2"><Camera size={12} /> Custom Caption (Optional)</label>
+              <input 
+                type="text" 
+                value={caption} 
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Write something on your strip..."
+                className="w-full px-4 py-4 rounded-2xl border-2 border-stone-100 bg-stone-50 text-sm focus:border-blue-600 outline-none transition-all"
+              />
             </div>
             <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-3 text-xl transition-all active:scale-95 shadow-xl">JACK IN <ArrowRight /></button>
           </div>
@@ -302,18 +322,22 @@ export default function PhotoBooth() {
                       </div>
                     ))}
                     <div className="py-2 text-center border-t border-stone-100 mt-2">
-                       <p className="text-[9px] font-black text-stone-300 italic uppercase">NOVA BOOTH // {session.style} // {new Date(session.timestamp).toLocaleTimeString()}</p>
+                       <p className="text-[9px] font-black text-stone-500 italic uppercase">
+                          {session.caption || `NOVA BOOTH // ${session.style.toUpperCase()}`}
+                       </p>
                     </div>
                  </div>
                  <div className="flex gap-4">
-                    <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-full shadow-lg text-blue-600 hover:scale-110 transition-all border border-stone-100"><Download size={24} /></button>
+                    {isDesktop && (
+                      <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-full shadow-lg text-blue-600 hover:scale-110 transition-all border border-stone-100"><Download size={24} /></button>
+                    )}
                     <button onClick={() => handleShare(session)} className="bg-white p-4 rounded-full shadow-lg text-emerald-600 hover:scale-110 transition-all border border-stone-100"><Share2 size={24} /></button>
                     <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded-full shadow-lg text-red-600 hover:scale-110 transition-all border border-stone-100"><Trash2 size={24} /></button>
                  </div>
                </div>
              ))}
           </div>
-          <button onClick={() => { setCapturedFrames([]); setStep('setup'); }} className="fixed bottom-8 bg-neutral-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 hover:scale-105 transition-all z-[100]"><Camera size={20} /> TAKE MORE SHOTS</button>
+          <button onClick={() => { setCapturedFrames([]); setCaption(''); setStep('setup'); }} className="fixed bottom-8 bg-neutral-900 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-2 hover:scale-105 transition-all z-[100]"><Camera size={20} /> TAKE MORE SHOTS</button>
         </div>
       )}
     </div>
