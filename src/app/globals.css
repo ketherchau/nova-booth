@@ -24,6 +24,7 @@ body {
     linear-gradient(to right, #e5e5e5 1px, transparent 1px),
     linear-gradient(to bottom, #e5e5e5 1px, transparent 1px);
   background-size: 20px 20px, 40px 40px, 40px 40px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Sketchy Borders & Illustrations */
@@ -107,15 +108,12 @@ body {
   overflow: hidden;
 }
 
-.vintage-filter {
-  filter: sepia(0.3) contrast(1.1) brightness(1.1) saturate(1.2);
-}
-
-.vintage-filter::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
-  opacity: 0.1;
-  pointer-events: none;
+/* Mobile App Layout Utilities */
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
