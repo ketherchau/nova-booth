@@ -83,3 +83,26 @@ body {
   opacity: 0.1;
   pointer-events: none;
 }
+
+/* Photobooth Strip Styles */
+.photobooth-strip {
+  background: white;
+  padding: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.strip-photo {
+  aspect-ratio: 4/3;
+  width: 100%;
+  background: #111;
+  overflow: hidden;
+}
+
+.btn-mode-active {
+  background: var(--polaroid-black);
+  color: white;
+  border-color: var(--polaroid-black);
+}
