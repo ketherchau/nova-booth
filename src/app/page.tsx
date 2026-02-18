@@ -7,10 +7,23 @@ import confetti from 'canvas-confetti';
 
 type ShootingStyle = 'classic' | 'FQS' | 'OFM' | 'retro-grain' | 'cyberpunk' | 'vivid' | 'dreamy' | 'noir';
 
+type CameraModel = 
+  | 'SX-70' 
+  | '600 Series' 
+  | 'Spectra' 
+  | 'i-Type' 
+  | 'Go' 
+  | 'Rollfilm' 
+  | 'Packfilm' 
+  | 'Flip' 
+  | 'I-2' 
+  | 'Impulse';
+
 interface PhotoSession {
   id: string;
   frames: string[];
   style: ShootingStyle;
+  camera: CameraModel;
   timestamp: number;
   caption?: string;
   stripUrl?: string;
@@ -19,6 +32,7 @@ interface PhotoSession {
 export default function PhotoBooth() {
   const [step, setStep] = useState<'setup' | 'shooting' | 'lab'>('setup');
   const [shootingStyle, setShootingStyle] = useState<ShootingStyle>('classic');
+  const [cameraModel, setCameraModel] = useState<CameraModel>('600 Series');
   const [frameCount, setFrameCount] = useState<number>(4);
   const [caption, setCaption] = useState<string>('');
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
@@ -47,11 +61,7 @@ export default function PhotoBooth() {
         stream.getTracks().forEach(track => track.stop());
       }
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', 
-          width: { ideal: 1080 }, 
-          height: { ideal: 1080 } 
-        },
+        video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1080 } },
         audio: false
       });
       setStream(newStream);
@@ -110,7 +120,8 @@ export default function PhotoBooth() {
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
       ctx.restore();
       
-      const filter = getCanvasFilter(shootingStyle);
+      // Combine Camera Characteristics + Shooting Style
+      const filter = getCombinedFilter(cameraModel, shootingStyle);
       if (filter !== 'none') {
         ctx.filter = filter;
         const tempCanvas = document.createElement('canvas');
@@ -163,7 +174,7 @@ export default function PhotoBooth() {
           ctx.fillStyle = '#1a1a1a';
           ctx.font = 'italic bold 28px "Comic Sans MS", cursive';
           ctx.textAlign = 'center';
-          const bottomText = caption || `NOVA BOOTH // ${shootingStyle.toUpperCase()}`;
+          const bottomText = caption || `NOVA BOOTH // ${cameraModel} // ${shootingStyle.toUpperCase()}`;
           ctx.fillText(bottomText, canvas.width / 2, canvas.height - 40);
 
           const stripUrl = canvas.toDataURL('image/jpeg', 0.9);
@@ -171,6 +182,7 @@ export default function PhotoBooth() {
             id: Math.random().toString(36).substr(2, 9),
             frames: frames,
             style: shootingStyle,
+            camera: cameraModel,
             timestamp: Date.now(),
             caption: caption,
             stripUrl: stripUrl
@@ -227,7 +239,7 @@ export default function PhotoBooth() {
         await navigator.share({
           files: [file],
           title: 'Nova Booth',
-          text: 'Check out my photobooth strip! 📸',
+          text: `Check out my photobooth strip from the ${session.camera}! 📸`,
         });
       } catch (err) { console.error("Share failed", err); }
     } else {
@@ -235,17 +247,34 @@ export default function PhotoBooth() {
     }
   };
 
-  const getCanvasFilter = (style: ShootingStyle) => {
-    switch (style) {
-      case 'FQS': return 'sepia(0.5) contrast(1.2) brightness(1.1)';
-      case 'OFM': return 'grayscale(1) contrast(1.3) brightness(1.1)';
-      case 'retro-grain': return 'saturate(1.5) contrast(1.1) brightness(1.1)';
-      case 'cyberpunk': return 'hue-rotate(280deg) saturate(2) contrast(1.2)';
-      case 'vivid': return 'saturate(2.5) contrast(1.1)';
-      case 'dreamy': return 'blur(0.5px) brightness(1.2) saturate(0.8)';
-      case 'noir': return 'grayscale(1) contrast(2) brightness(0.8)';
-      default: return 'none';
+  const getCombinedFilter = (camera: CameraModel, style: ShootingStyle) => {
+    let base = 'none';
+    
+    // 1. Apply Camera-specific baseline
+    switch (camera) {
+      case 'SX-70': base = 'saturate(1.4) contrast(1.2) brightness(1.05) hue-rotate(-5deg)'; break;
+      case '600 Series': base = 'saturate(0.9) contrast(0.9) brightness(1.1) sepia(0.1)'; break;
+      case 'Spectra': base = 'saturate(0.8) brightness(1.1) hue-rotate(320deg) blur(0.3px)'; break;
+      case 'Go': base = 'saturate(0.7) contrast(0.8) brightness(1.2) blur(1px)'; break;
+      case 'Rollfilm': base = 'grayscale(1) contrast(1.5) sepia(0.2)'; break;
+      case 'Packfilm': base = 'saturate(1.1) contrast(1.1) brightness(1) sepia(0.05)'; break;
+      case 'I-2': base = 'saturate(1.2) contrast(1.1) brightness(1.05)'; break;
+      case 'Impulse': base = 'saturate(1) contrast(1) brightness(1.1) sepia(0.05)'; break;
+      default: base = 'none';
     }
+
+    // 2. Apply Style-specific overlay
+    switch (style) {
+      case 'FQS': base += ' sepia(0.4) contrast(1.1)'; break;
+      case 'OFM': base += ' grayscale(1) contrast(1.2)'; break;
+      case 'retro-grain': base += ' saturate(1.3) contrast(1.1) brightness(1.1)'; break;
+      case 'cyberpunk': base += ' hue-rotate(280deg) saturate(1.8) contrast(1.1)'; break;
+      case 'vivid': base += ' saturate(2) contrast(1.1)'; break;
+      case 'dreamy': base += ' blur(0.5px) brightness(1.1) saturate(0.8)'; break;
+      case 'noir': base += ' grayscale(1) contrast(2) brightness(0.8)'; break;
+    }
+
+    return base;
   };
 
   const styleIcons: Record<ShootingStyle, any> = {
@@ -259,11 +288,12 @@ export default function PhotoBooth() {
     'noir': Layers
   };
 
+  const cameras: CameraModel[] = ['SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
+
   return (
     <div className="fixed inset-0 bg-stone-100 flex flex-col overflow-hidden safe-top safe-bottom">
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* --- SETUP --- */}
       {step === 'setup' && (
         <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto animate-in fade-in duration-500">
           <header className="text-center py-6">
@@ -273,55 +303,72 @@ export default function PhotoBooth() {
 
           <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
             <div className="sketch-card p-6 md:p-10 border-4 border-black space-y-8 flex-1">
+              
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Layers size={12} className="text-blue-500" /> Style Gallery
+                  <Camera size={12} className="text-blue-500" /> Select Hardware
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-                  {(Object.keys(styleIcons) as ShootingStyle[]).map(s => {
-                    const Icon = styleIcons[s];
-                    return (
-                      <button key={s} onClick={() => setShootingStyle(s)} className={cn(
-                        "flex flex-col items-center gap-2 py-3 rounded-xl border-2 transition-all",
-                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[3px_3px_0px_black] -translate-x-0.5 -translate-y-0.5" : "border-neutral-100 bg-white text-neutral-500"
-                      )}>
-                        <Icon size={18} />
-                        <span className="text-[9px] font-black uppercase">{s}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Grid size={12} className="text-blue-500" /> Multi-Shot
-                </label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4].map(n => (
-                    <button key={n} onClick={() => setFrameCount(n)} className={cn(
-                      "flex-1 py-4 rounded-xl border-2 transition-all font-black text-xl",
-                      frameCount === n ? "bg-black border-black text-white shadow-[3px_3px_0px_rgba(0,0,0,0.3)]" : "border-neutral-100 bg-white text-neutral-500"
-                    )}>{n}</button>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  {cameras.map(c => (
+                    <button key={c} onClick={() => setCameraModel(c)} className={cn(
+                      "py-2 rounded-lg border-2 transition-all text-[8px] font-black uppercase",
+                      cameraModel === c ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
+                    )}>{c}</button>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Camera size={12} className="text-blue-500" /> Caption
+                  <Layers size={12} className="text-blue-500" /> Style Gallery
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(Object.keys(styleIcons) as ShootingStyle[]).map(s => {
+                    const Icon = styleIcons[s];
+                    return (
+                      <button key={s} onClick={() => setShootingStyle(s)} className={cn(
+                        "flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all",
+                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[2px_2px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                      )}>
+                        <Icon size={14} />
+                        <span className="text-[8px] font-black uppercase">{s}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-6">
+                <div className="flex-1 space-y-4">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                    <Grid size={12} className="text-blue-500" /> Frames
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map(n => (
+                      <button key={n} onClick={() => setFrameCount(n)} className={cn(
+                        "flex-1 py-3 rounded-xl border-2 transition-all font-black text-lg",
+                        frameCount === n ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
+                      )}>{n}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles size={12} className="text-blue-500" /> Caption
                 </label>
                 <input 
                   type="text" 
                   value={caption} 
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="Hand-write something..."
-                  className="w-full px-5 py-4 rounded-xl border-3 border-black bg-white text-sm font-bold outline-none"
+                  className="w-full px-5 py-3 rounded-xl border-3 border-black bg-white text-sm font-bold outline-none"
                 />
               </div>
             </div>
 
-            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-500 text-white font-black py-5 md:py-6 rounded-2xl flex items-center justify-center gap-3 text-xl md:text-2xl transition-all active:scale-95 border-3 border-black shadow-[6px_6px_0px_black]">
+            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-500 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 text-xl transition-all active:scale-95 border-3 border-black shadow-[6px_6px_0px_black]">
               JACK IN <ArrowRight />
             </button>
           </div>
@@ -333,11 +380,12 @@ export default function PhotoBooth() {
         <div className="flex-1 flex flex-col p-4 animate-in zoom-in duration-300">
            <div className="flex-1 flex flex-col items-center justify-center max-w-[450px] mx-auto w-full">
               <div className="relative w-full aspect-[4/5.5] retro-body p-6 flex flex-col items-center shadow-2xl">
-                <div className="w-full flex justify-between px-4 mb-4 md:mb-8">
-                   <div className="w-10 h-10 md:w-14 md:h-14 bg-neutral-800 rounded-xl border-4 border-black flex items-center justify-center">
+                <div className="w-full flex justify-between px-4 mb-4">
+                   <div className="w-10 h-10 bg-neutral-800 rounded-xl border-4 border-black flex items-center justify-center">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
                    </div>
-                   <div className="w-8 h-16 md:w-10 md:h-24 rainbow-stripe" />
+                   <div className="text-[10px] font-black uppercase text-neutral-400 mt-2">{cameraModel}</div>
+                   <div className="w-8 h-16 rainbow-stripe" />
                 </div>
 
                 <div className="relative w-full aspect-square rounded-full bg-black border-4 md:border-8 border-black shadow-2xl overflow-hidden ring-8 md:ring-12 ring-white/50">
@@ -350,7 +398,7 @@ export default function PhotoBooth() {
                   )}
                 </div>
 
-                <div className="mt-8 md:mt-12 flex flex-col items-center gap-2">
+                <div className="mt-8 flex flex-col items-center gap-2">
                    <button 
                     onClick={runCaptureSequence} 
                     disabled={isCountingDown || capturedFrames.length >= frameCount} 
@@ -383,7 +431,7 @@ export default function PhotoBooth() {
         <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto animate-in slide-in-from-bottom duration-500">
           <header className="text-center py-6">
             <h2 className="text-4xl md:text-5xl font-black text-neutral-900 uppercase italic">LAB RESULTS</h2>
-            <p className="text-neutral-400 uppercase tracking-[0.3em] text-[10px] mt-2 font-black italic">Hand-crafted at Nova Studio</p>
+            <p className="text-neutral-400 uppercase tracking-[0.4em] text-[10px] mt-2 font-black italic">Simulated {cameraModel} Film</p>
           </header>
 
           <div className="flex-1 flex flex-col items-center gap-10 pb-32">
@@ -397,16 +445,16 @@ export default function PhotoBooth() {
                     ))}
                     <div className="py-4 text-center border-t-3 border-black mt-3">
                        <p className="text-xs font-black text-neutral-800 italic uppercase">
-                          {session.caption || `NOVA BOOTH // ${session.style}`}
+                          {session.caption || `NOVA BOOTH // ${session.camera} // ${session.style}`}
                        </p>
                     </div>
                  </div>
                  <div className="flex gap-4">
                     {isDesktop && (
-                      <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-blue-500 border-3 border-black active:shadow-none active:translate-y-0.5"><Download size={20} /></button>
+                      <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-blue-500 border-3 border-black hover:-translate-y-0.5"><Download size={20} /></button>
                     )}
-                    <button onClick={() => handleShare(session)} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-emerald-500 border-3 border-black active:shadow-none active:translate-y-0.5"><Share2 size={20} /></button>
-                    <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-red-500 border-3 border-black active:shadow-none active:translate-y-0.5"><Trash2 size={20} /></button>
+                    <button onClick={() => handleShare(session)} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-emerald-500 border-3 border-black hover:-translate-y-0.5"><Share2 size={20} /></button>
+                    <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-red-500 border-3 border-black hover:-translate-y-0.5"><Trash2 size={20} /></button>
                  </div>
                </div>
              ))}
