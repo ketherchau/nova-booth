@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+@theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #fdfdfd;
+  --foreground: #171717;
+  --primary: #3b82f6;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+@keyframes flash {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.camera-flash {
+  animation: flash 0.3s ease-out;
+}
+
+.polaroid-frame {
+  background: white;
+  padding: 12px 12px 40px 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  transform: rotate(var(--rotation, 0deg));
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.polaroid-frame:hover {
+  transform: rotate(0deg) scale(1.05);
+  z-index: 10;
 }
