@@ -6,9 +6,11 @@
 }
 
 :root {
-  --background: #fdfdfd;
+  --background: #e5e7eb;
   --foreground: #171717;
-  --primary: #3b82f6;
+  --polaroid-body: #f0f0f0;
+  --polaroid-black: #262626;
+  --polaroid-accent: #ef4444;
 }
 
 body {
@@ -18,25 +20,66 @@ body {
   overflow-x: hidden;
 }
 
+/* Animations */
 @keyframes flash {
   0% { opacity: 0; }
-  50% { opacity: 1; }
+  10% { opacity: 1; }
   100% { opacity: 0; }
 }
 
 .camera-flash {
-  animation: flash 0.3s ease-out;
+  animation: flash 0.4s ease-out forwards;
 }
 
-.polaroid-frame {
+@keyframes eject {
+  0% { transform: translateY(-50%) scale(0.8); opacity: 0; }
+  100% { transform: translateY(20px) scale(1); opacity: 1; }
+}
+
+.photo-eject {
+  animation: eject 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+/* Polaroid Styles */
+.retro-body {
+  background: var(--polaroid-body);
+  box-shadow: 
+    inset -4px -4px 10px rgba(0,0,0,0.1),
+    inset 4px 4px 10px rgba(255,255,255,0.8),
+    0 20px 40px rgba(0,0,0,0.2);
+}
+
+.lens-glass {
+  background: radial-gradient(circle at 30% 30%, #444 0%, #111 70%, #000 100%);
+  box-shadow: 
+    inset 0 0 20px rgba(0,0,0,0.8),
+    0 0 10px rgba(255,255,255,0.2);
+}
+
+.rainbow-stripe {
+  background: linear-gradient(to bottom, 
+    #ff3b3b 20%, 
+    #ff9f00 20% 40%, 
+    #ffee00 40% 60%, 
+    #00c853 60% 80%, 
+    #2196f3 80%);
+}
+
+.polaroid-print {
   background: white;
   padding: 12px 12px 40px 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  transform: rotate(var(--rotation, 0deg));
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.polaroid-frame:hover {
-  transform: rotate(0deg) scale(1.05);
-  z-index: 10;
+.vintage-filter {
+  filter: sepia(0.3) contrast(1.1) brightness(1.1) saturate(1.2);
+}
+
+.vintage-filter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
+  opacity: 0.1;
+  pointer-events: none;
 }
