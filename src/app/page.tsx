@@ -128,16 +128,32 @@ export default function PhotoBooth() {
       const targetRatio = 800 / 600;
       
       let sw, sh, sx, sy;
-      if (videoRatio > targetRatio) {
-        sh = video.videoHeight;
-        sw = video.videoHeight * targetRatio;
-        sx = (video.videoWidth - sw) / 2;
-        sy = 0;
+      if (highAngle) {
+        // High Angle: Use "Contain" logic to ensure the WHOLE body is captured in the 800x600 raw buffer
+        if (videoRatio > targetRatio) {
+          sw = video.videoWidth;
+          sh = video.videoWidth / targetRatio;
+          sx = 0;
+          sy = (video.videoHeight - sh) / 2;
+        } else {
+          sh = video.videoHeight;
+          sw = video.videoHeight * targetRatio;
+          sx = (video.videoWidth - sw) / 2;
+          sy = 0;
+        }
       } else {
-        sw = video.videoWidth;
-        sh = video.videoWidth / targetRatio;
-        sx = 0;
-        sy = (video.videoHeight - sh) / 2;
+        // Normal Mode: Use "Cover" logic (previous behavior)
+        if (videoRatio > targetRatio) {
+          sh = video.videoHeight;
+          sw = video.videoHeight * targetRatio;
+          sx = (video.videoWidth - sw) / 2;
+          sy = 0;
+        } else {
+          sw = video.videoWidth;
+          sh = video.videoWidth / targetRatio;
+          sx = 0;
+          sy = (video.videoHeight - sh) / 2;
+        }
       }
       rawCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
 
@@ -190,16 +206,16 @@ export default function PhotoBooth() {
         }
         ctx.drawImage(bp, bx, by, bw, bh);
 
-        // Draw Person on top of the background (NO CLIPPING, scale properly)
+        // Draw Person on top of the background (RESCALED properly)
         // Center of the diamond in V11 is roughly at (400, 300)
-        // We'll scale the person to occupy a significant portion of the screen
-        const personWidth = 320; // Reduced to 320px for full body visibility
-        const personHeight = 240; // Maintain 4:3 aspect ratio
+        const personWidth = 320; 
+        const personHeight = 240; 
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 + 20; // Centered on the floor area
+        const py = (600 - personHeight) / 2 + 20; 
 
         ctx.save();
-        // Removed ctx.clip() to prevent hair/body cut-off
+        // RESCALE: Instead of drawing the full capture scaled down, 
+        // we scale the context to ensure the whole 800x600 buffer fits within the 320x240 area
         ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
         ctx.restore();
       } else {
