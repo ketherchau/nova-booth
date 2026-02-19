@@ -197,31 +197,22 @@ export default function PhotoBooth() {
       ctx.clearRect(0, 0, 800, 600);
 
       if (highAngle && backplateRef.current) {
-        // Draw the Reference Image as Background (Preserve aspect ratio - COVER logic)
+        // 1. SET CANVAS TO BACKGROUND'S ORIGINAL SIZE
         const bp = backplateRef.current;
-        const bpRatio = bp.width / bp.height;
-        const canvasRatio = 800 / 600;
+        canvas.width = bp.width;
+        canvas.height = bp.height;
         
-        let bw, bh, bx, by;
-        if (bpRatio > canvasRatio) {
-          // Image is wider than canvas
-          bh = 600;
-          bw = 600 * bpRatio;
-          bx = (800 - bw) / 2;
-          by = 0;
-        } else {
-          // Image is taller than canvas
-          bw = 800;
-          bh = 800 / bpRatio;
-          bx = 0;
-          by = (600 - bh) / 2;
-        }
-        ctx.drawImage(bp, bx, by, bw, bh);
+        // 2. DRAW BACKGROUND (Original resolution)
+        ctx.drawImage(bp, 0, 0);
 
-        const personWidth = 500;
-        const personHeight = 375;
-        const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 - 24;
+        // 3. SCALE PEOPLE LAYER RELATIVE TO THE NEW CANVAS SIZE
+        // We'll aim for people to occupy about 60% of the background width
+        const personWidth = bp.width * 0.6;
+        const personHeight = personWidth * (rawCanvas.height / rawCanvas.width);
+        
+        const px = (canvas.width - personWidth) / 2;
+        // Sit the feet near the bottom-third where the floor diamond is
+        const py = (canvas.height - personHeight) / 2 - (bp.height * 0.04); 
 
         ctx.save();
         const maskCanvas = document.createElement('canvas');
