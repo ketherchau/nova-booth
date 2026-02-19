@@ -356,11 +356,11 @@ export default function PhotoBooth() {
   const cameras: CameraModel[] = ['SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
 
   return (
-    <div className="fixed inset-0 bg-stone-100 flex flex-col overflow-hidden safe-top safe-bottom">
+    <div className="fixed inset-0 bg-stone-100 flex flex-col overflow-hidden safe-top safe-bottom touch-none">
       <canvas ref={canvasRef} className="hidden" />
 
       {step === 'setup' && (
-        <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto animate-in fade-in duration-500">
+        <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto overscroll-contain animate-in fade-in duration-500 touch-pan-y">
           <header className="text-center py-6">
             <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-neutral-900">NOVA BOOTH</h1>
             <p className="text-neutral-500 uppercase tracking-[0.4em] text-[10px] md:text-xs mt-2 font-black">Sketch Your Moment</p>
@@ -528,7 +528,7 @@ export default function PhotoBooth() {
 
       {/* --- LAB --- */}
       {step === 'lab' && (
-        <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto animate-in slide-in-from-bottom duration-500">
+        <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-500 touch-pan-y">
           <header className="text-center py-6">
             <h2 className="text-4xl md:text-5xl font-black text-neutral-900 uppercase italic">LAB RESULTS</h2>
             <p className="text-neutral-400 uppercase tracking-[0.4em] text-[10px] mt-2 font-black italic">Simulated {cameraModel} Film</p>
