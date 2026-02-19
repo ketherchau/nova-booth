@@ -152,6 +152,9 @@ export default function PhotoBooth() {
         ctx.rotate(-Math.PI / 4);
         ctx.translate(-400, -300);
         
+        // MIX-BLEND-SCREEN KEYING (Simulates removing dark backgrounds)
+        ctx.globalCompositeOperation = 'screen';
+        
         // Draw video centered on floor
         ctx.translate(800, 0);
         ctx.scale(-1, 1);
@@ -472,18 +475,18 @@ export default function PhotoBooth() {
 
                 <div className={cn(
                   "relative w-full aspect-square rounded-full border-4 md:border-8 border-black shadow-2xl overflow-hidden ring-8 md:ring-12 ring-white/50",
-                  highAngle ? "red-cube-bg" : "bg-black"
+                  highAngle ? "bg-red-900" : "bg-black"
                 )}>
-                  {highAngle && <div className="red-cube-floor" />}
-                  <div className={cn("w-full h-full", highAngle && "red-cube-content")}>
+                  {/* {highAngle && <div className="red-cube-floor" />} */}
+                  <div className={cn("w-full h-full", highAngle && "flex items-center justify-center")}>
                      <video 
                       ref={videoRef} 
                       autoPlay 
                       playsInline 
                       muted 
                       className={cn(
-                        "object-cover scale-x-[-1] opacity-90 mix-blend-screen",
-                        highAngle ? "w-[45%] h-[45%] rotate-45" : "w-full h-full"
+                        "object-cover scale-x-[-1] opacity-90",
+                        highAngle ? "w-full h-full" : "w-full h-full"
                       )} 
                      />
                   </div>
