@@ -211,7 +211,7 @@ export default function PhotoBooth() {
         const personWidth = 500; // Upgraded to 500px
         const personHeight = 375; // Maintain 4:3 aspect ratio
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 + 35; // Centered on the floor area with slight downward bias
+        const py = (600 - personHeight) / 2; // Refined to +0px offset
 
         ctx.save();
         // RESCALE: Instead of drawing the full capture scaled down, 
