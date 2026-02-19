@@ -208,14 +208,14 @@ export default function PhotoBooth() {
 
         // Draw Person on top of the background (RESCALED properly)
         // Center of the diamond in V11 is roughly at (400, 300)
-        const personWidth = 450; // Rescaled to 450px
-        const personHeight = 337.5; // Maintain 4:3 aspect ratio
+        const personWidth = 500; // Upgraded to 500px
+        const personHeight = 375; // Maintain 4:3 aspect ratio
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 + 30; // Centered on the floor area
+        const py = (600 - personHeight) / 2 + 35; // Centered on the floor area with slight downward bias
 
         ctx.save();
         // RESCALE: Instead of drawing the full capture scaled down, 
-        // we scale the context to ensure the whole 800x600 buffer fits within the 450x337.5 area
+        // we scale the context to ensure the whole 800x600 buffer fits within the 500x375 area
         ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
         ctx.restore();
       } else {
