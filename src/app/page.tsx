@@ -155,7 +155,6 @@ export default function PhotoBooth() {
           finalFrameSource = img;
         } catch (err) {
           console.error("BG Removal Error:", err);
-          // Fallback to raw if it fails
         } finally {
           setIsProcessing(false);
         }
@@ -165,30 +164,72 @@ export default function PhotoBooth() {
       ctx.clearRect(0, 0, 800, 600);
 
       if (highAngle) {
-        // Red Cube BG
+        // --- RED CUBE V2 ARCHITECTURE ---
+        // Base
         ctx.fillStyle = '#b71c1c';
         ctx.fillRect(0, 0, 800, 600);
-        
-        const grad = ctx.createRadialGradient(400, 300, 100, 400, 300, 500);
+
+        // Perspective Walls
+        // Top Wall
+        ctx.fillStyle = '#8e0000';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(800, 0);
+        ctx.lineTo(600, 200);
+        ctx.lineTo(200, 200);
+        ctx.fill();
+
+        // Bottom Wall
+        ctx.fillStyle = '#d32f2f';
+        ctx.beginPath();
+        ctx.moveTo(0, 600);
+        ctx.lineTo(800, 600);
+        ctx.lineTo(600, 400);
+        ctx.lineTo(200, 400);
+        ctx.fill();
+
+        // Left Wall
+        ctx.fillStyle = '#7f0000';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, 600);
+        ctx.lineTo(200, 400);
+        ctx.lineTo(200, 200);
+        ctx.fill();
+
+        // Right Wall
+        ctx.fillStyle = '#c62828';
+        ctx.beginPath();
+        ctx.moveTo(800, 0);
+        ctx.lineTo(800, 600);
+        ctx.lineTo(600, 400);
+        ctx.lineTo(600, 200);
+        ctx.fill();
+
+        // Floor
+        ctx.fillStyle = '#e64a4a';
+        ctx.fillRect(200, 200, 400, 200);
+
+        // Lighting Overlays
+        const grad = ctx.createRadialGradient(400, 300, 50, 400, 300, 500);
         grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.7)');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 800, 600);
-        
+
+        // Corner Shadow (Top Left)
+        const tl = ctx.createRadialGradient(0, 0, 0, 0, 0, 300);
+        tl.addColorStop(0, 'rgba(0,0,0,0.8)');
+        tl.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = tl;
+        ctx.fillRect(0, 0, 400, 300);
+
+        // Draw Person (Clipped to Floor)
         ctx.save();
-        ctx.translate(400, 300);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillStyle = '#e64a4a';
-        ctx.shadowBlur = 40;
-        ctx.shadowColor = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(-150, -150, 300, 300);
-        
-        // Clip to Diamond and draw Person
         ctx.beginPath();
-        ctx.rect(-145, -145, 290, 290);
+        ctx.rect(205, 205, 390, 190); // Slight inset for floor padding
         ctx.clip();
-        ctx.rotate(-Math.PI / 4);
-        ctx.drawImage(finalFrameSource as any, -200, -200, 400, 400); 
+        ctx.drawImage(finalFrameSource as any, 200, 200, 400, 200);
         ctx.restore();
       } else {
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
@@ -313,7 +354,7 @@ export default function PhotoBooth() {
             captureFrame();
             currentIdx++;
             if (currentIdx < frameCount) {
-              setTimeout(startOne, highAngle ? 4000 : 1500); // More time for AI
+              setTimeout(startOne, highAngle ? 4000 : 1500); 
             }
             return 3;
           }
