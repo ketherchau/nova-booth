@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp, Loader2 } from 'lucide-react';
+import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp, Loader2, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { removeBackground } from '@imgly/background-removal';
@@ -21,12 +21,15 @@ type CameraModel =
   | 'I-2' 
   | 'Impulse';
 
+type HighAngleBG = 'red-cube' | 'curtain';
+
 interface PhotoSession {
   id: string;
   frames: string[];
   style: ShootingStyle;
   camera: CameraModel;
   highAngle: boolean;
+  highAngleBG?: HighAngleBG;
   timestamp: number;
   caption?: string;
   stripUrl?: string;
@@ -44,6 +47,7 @@ export default function PhotoBooth() {
   const [cameraModel, setCameraModel] = useState<CameraModel>('Normal');
   const [frameCount, setFrameCount] = useState<number>(4);
   const [highAngle, setHighAngle] = useState<boolean>(false);
+  const [highAngleBG, setHighAngleBG] = useState<HighAngleBG>('red-cube');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [caption, setCaption] = useState<string>('');
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
@@ -59,17 +63,22 @@ export default function PhotoBooth() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const backplateRef = useRef<HTMLImageElement | null>(null);
+  const redCubeRef = useRef<HTMLImageElement | null>(null);
+  const curtainRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 1024);
     checkIsDesktop();
     window.addEventListener('resize', checkIsDesktop);
 
-    // Preload Final Reference Backplate
-    const img = new Image();
-    img.src = '/red-cube-final-bg.jpg';
-    backplateRef.current = img;
+    // Preload Backplates
+    const redImg = new Image();
+    redImg.src = '/red-cube-final-bg.jpg';
+    redCubeRef.current = redImg;
+
+    const curtainImg = new Image();
+    curtainImg.src = '/curtain-bg.jpg';
+    curtainRef.current = curtainImg;
 
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
@@ -190,22 +199,18 @@ export default function PhotoBooth() {
       }
 
       // 3. COMPOSE FINAL CANVAS
-      if (highAngle && backplateRef.current) {
-        const bp = backplateRef.current;
-        // 1. LOCK CANVAS TO NATIVE BACKPLATE RESOLUTION
-        canvas.width = bp.width;
-        canvas.height = bp.height;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 2. DRAW BACKPLATE (1:1)
-        ctx.drawImage(bp, 0, 0);
+      const activeBP = highAngleBG === 'red-cube' ? redCubeRef.current : curtainRef.current;
 
-        // 3. SCALE PEOPLE PROPORTIONALLY TO THE NATIVE RESOLUTION
-        // The people layer should occupy a consistent percentage of the background width
-        const personWidth = bp.width * 0.6;
-        const personHeight = personWidth * (600 / 800); // Correct 4:3 capture ratio
+      if (highAngle && activeBP) {
+        canvas.width = activeBP.width;
+        canvas.height = activeBP.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(activeBP, 0, 0);
+
+        const personWidth = canvas.width * 0.6;
+        const personHeight = personWidth * (600 / 800);
         const px = (canvas.width - personWidth) / 2;
-        const py = (canvas.height - personHeight) / 2 - (bp.height * 0.03); 
+        const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.04); 
 
         ctx.save();
         const maskCanvas = document.createElement('canvas');
@@ -265,7 +270,7 @@ export default function PhotoBooth() {
   const getPixelsFilters = (camera: CameraModel, style: ShootingStyle) => {
     const stack: string[] = [];
     switch (camera) {
-      case 'Normal': break; // No hardware filter
+      case 'Normal': break;
       case 'SX-70': stack.push('rosetint'); break;
       case '600 Series': stack.push('mellow'); break;
       case 'Spectra': stack.push('solange'); break;
@@ -278,7 +283,7 @@ export default function PhotoBooth() {
       case 'Impulse': stack.push('warmth'); break;
     }
     switch (style) {
-      case 'standard': break; // No style overlay
+      case 'standard': break;
       case 'FQS': stack.push('sunset'); break;
       case 'OFM': stack.push('greyscale'); break;
       case 'retro-grain': stack.push('vintage'); break;
@@ -298,14 +303,14 @@ export default function PhotoBooth() {
     const padding = 40;
     const gap = 20;
 
-    // IF HIGH ANGLE, USE BACKPLATE DIMENSIONS FOR STRIP SIZING
     let finalFrameWidth = 800;
     let finalFrameHeight = 600;
 
-    if (highAngle && backplateRef.current) {
-      // FORCE USE NATIVE IMAGE DIMENSIONS
-      finalFrameWidth = backplateRef.current.width;
-      finalFrameHeight = backplateRef.current.height;
+    const activeBP = highAngleBG === 'red-cube' ? redCubeRef.current : curtainRef.current;
+
+    if (highAngle && activeBP) {
+      finalFrameWidth = activeBP.width;
+      finalFrameHeight = activeBP.height;
     }
 
     canvas.width = finalFrameWidth + (padding * 2);
@@ -318,7 +323,6 @@ export default function PhotoBooth() {
     frames.forEach((src, i) => {
       const img = new Image();
       img.onload = () => {
-        // Draw each frame using the precise final dimensions to avoid cropping
         ctx.drawImage(img, padding, padding + (i * (finalFrameHeight + gap)), finalFrameWidth, finalFrameHeight);
         loadedCount++;
         if (loadedCount === frames.length) {
@@ -335,6 +339,7 @@ export default function PhotoBooth() {
             style: shootingStyle,
             camera: cameraModel,
             highAngle: highAngle,
+            highAngleBG: highAngleBG,
             timestamp: Date.now(),
             caption: caption,
             stripUrl: stripUrl
@@ -479,6 +484,34 @@ export default function PhotoBooth() {
                 </div>
               </div>
 
+              {highAngle && (
+                <div className="space-y-4 animate-in slide-in-from-top duration-300">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                    <ImageIcon size={12} className="text-red-500" /> High Angle Environment
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => setHighAngleBG('red-cube')}
+                      className={cn(
+                        "py-3 rounded-xl border-2 font-black uppercase text-[10px] transition-all flex items-center justify-center gap-2",
+                        highAngleBG === 'red-cube' ? "bg-red-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                      )}
+                    >
+                      <div className="w-3 h-3 bg-red-800 rounded-sm" /> Red Cube
+                    </button>
+                    <button 
+                      onClick={() => setHighAngleBG('curtain')}
+                      className={cn(
+                        "py-3 rounded-xl border-2 font-black uppercase text-[10px] transition-all flex items-center justify-center gap-2",
+                        highAngleBG === 'curtain' ? "bg-slate-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                      )}
+                    >
+                      <div className="w-3 h-3 bg-slate-400 rounded-sm" /> Curtain
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                   <Layers size={12} className="text-blue-500" /> Style Gallery
@@ -545,7 +578,7 @@ export default function PhotoBooth() {
                    <div className="w-10 h-10 bg-neutral-800 rounded-xl border-4 border-black flex items-center justify-center">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
                    </div>
-                   <div className="text-[10px] font-black uppercase text-neutral-400 mt-2">{cameraModel} {highAngle && '• HIGH ANGLE'}</div>
+                   <div className="text-[10px] font-black uppercase text-neutral-400 mt-2">{cameraModel} {highAngle && `• HIGH ANGLE (${highAngleBG.toUpperCase()})`}</div>
                    <div className="w-8 h-16 rainbow-stripe" />
                 </div>
 
@@ -626,7 +659,7 @@ export default function PhotoBooth() {
                     ))}
                     <div className="py-4 text-center border-t-3 border-black mt-3">
                        <p className="text-xs font-black text-neutral-800 italic uppercase">
-                          {session.caption || `NOVA BOOTH // ${session.camera} // ${session.style} ${session.highAngle ? '// HIGH ANGLE' : ''}`}
+                          {session.caption || `NOVA BOOTH // ${session.camera} // ${session.style} ${session.highAngle ? `// HIGH ANGLE (${session.highAngleBG?.toUpperCase()})` : ''}`}
                        </p>
                     </div>
                  </div>
