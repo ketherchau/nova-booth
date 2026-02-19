@@ -71,7 +71,6 @@ export default function PhotoBooth() {
     checkIsDesktop();
     window.addEventListener('resize', checkIsDesktop);
 
-    // Preload Backplates
     const redImg = new Image();
     redImg.src = '/red-cube-final-bg.jpg';
     redCubeRef.current = redImg;
@@ -88,18 +87,11 @@ export default function PhotoBooth() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
-      
       const constraints = {
-        video: { 
-          facingMode: facingMode,
-          width: { ideal: 1080 }, 
-          height: { ideal: 1080 } 
-        },
+        video: { facingMode: facingMode, width: { ideal: 1080 }, height: { ideal: 1080 } },
         audio: false
       };
-      
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
       setStream(newStream);
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
@@ -131,7 +123,6 @@ export default function PhotoBooth() {
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (ctx) {
-      // 1. RAW CAPTURE (OFFSCREEN)
       const rawCanvas = document.createElement('canvas');
       rawCanvas.width = 800;
       rawCanvas.height = 600;
@@ -174,7 +165,6 @@ export default function PhotoBooth() {
 
       let finalFrameSource: CanvasImageSource | Blob = rawCanvas;
 
-      // 2. BACKGROUND REMOVAL (IF HIGH ANGLE)
       if (highAngle) {
         setIsProcessing(true);
         try {
@@ -183,7 +173,6 @@ export default function PhotoBooth() {
             progress: (step, progress) => console.log(`BG Removal: ${step} ${Math.round(progress * 100)}%`),
             model: 'isnet_fp16'
           });
-          
           const img = new Image();
           const url = URL.createObjectURL(removedBgBlob);
           await new Promise((resolve) => {
@@ -198,7 +187,6 @@ export default function PhotoBooth() {
         }
       }
 
-      // 3. COMPOSE FINAL CANVAS
       const activeBP = highAngleBG === 'red-cube' ? redCubeRef.current : curtainRef.current;
 
       if (highAngle && activeBP) {
@@ -210,7 +198,7 @@ export default function PhotoBooth() {
         const personWidth = canvas.width * 0.6;
         const personHeight = personWidth * (600 / 800);
         const px = (canvas.width - personWidth) / 2;
-        const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.04); 
+        const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.03); 
 
         ctx.save();
         const maskCanvas = document.createElement('canvas');
@@ -236,7 +224,6 @@ export default function PhotoBooth() {
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
       }
       
-      // APPLY PIXELS.JS FILTERS
       try {
         if (window.pixelsJS) {
           const filters = getPixelsFilters(cameraModel, shootingStyle);
@@ -299,26 +286,19 @@ export default function PhotoBooth() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
     const padding = 40;
     const gap = 20;
-
     let finalFrameWidth = 800;
     let finalFrameHeight = 600;
-
     const activeBP = highAngleBG === 'red-cube' ? redCubeRef.current : curtainRef.current;
-
     if (highAngle && activeBP) {
       finalFrameWidth = activeBP.width;
       finalFrameHeight = activeBP.height;
     }
-
     canvas.width = finalFrameWidth + (padding * 2);
     canvas.height = (finalFrameHeight * frames.length) + (gap * (frames.length - 1)) + (padding * 2) + 80;
-
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     let loadedCount = 0;
     frames.forEach((src, i) => {
       const img = new Image();
@@ -327,11 +307,10 @@ export default function PhotoBooth() {
         loadedCount++;
         if (loadedCount === frames.length) {
           ctx.fillStyle = '#1a1a1a';
-          ctx.font = `italic bold ${Math.max(20, finalFrameWidth * 0.035)}px "Comic Sans MS", cursive`;
+          ctx.font = `italic bold ${Math.max(20, finalFrameWidth * 0.035)}px "Courier New"`;
           ctx.textAlign = 'center';
           const bottomText = caption || `NOVA BOOTH // ${cameraModel} // ${shootingStyle.toUpperCase()}`;
           ctx.fillText(bottomText, canvas.width / 2, canvas.height - 40);
-
           const stripUrl = canvas.toDataURL('image/jpeg', 0.9);
           setSessions(current => [{
             id: Math.random().toString(36).substr(2, 9),
@@ -353,7 +332,6 @@ export default function PhotoBooth() {
   const runCaptureSequence = () => {
     if (isCountingDown || isProcessing) return;
     setCapturedFrames([]);
-    
     let currentIdx = 0;
     const startOne = () => {
       setIsCountingDown(true);
@@ -393,11 +371,7 @@ export default function PhotoBooth() {
         const res = await fetch(url);
         const blob = await res.blob();
         const file = new File([blob], `nova-booth-${session.id}.jpg`, { type: 'image/jpeg' });
-        await navigator.share({
-          files: [file],
-          title: 'Nova Booth',
-          text: `Check out my photobooth strip from the ${session.camera}! 📸`,
-        });
+        await navigator.share({ files: [file], title: 'Nova Booth', text: `Check out my photobooth strip!` });
       } catch (err) { console.error("Share failed", err); }
     } else {
       handleDownload(session);
@@ -419,66 +393,53 @@ export default function PhotoBooth() {
   const cameras: CameraModel[] = ['Normal', 'SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
 
   return (
-    <div className="fixed inset-0 bg-stone-100 flex flex-col overflow-hidden safe-top safe-bottom touch-none">
+    <div className="fixed inset-0 bg-[#f4e4bc] flex flex-col overflow-hidden safe-top safe-bottom touch-none">
       <canvas ref={canvasRef} className="hidden" />
 
       {step === 'setup' && (
-        <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto overscroll-contain animate-in fade-in duration-500 touch-pan-y">
-          <header className="text-center py-6">
-            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-neutral-900">NOVA BOOTH</h1>
-            <p className="text-neutral-500 uppercase tracking-[0.4em] text-[10px] md:text-xs mt-2 font-black">Sketch Your Moment</p>
-          </header>
+        <div className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto overscroll-contain animate-in fade-in duration-500 touch-pan-y">
+          <div className="max-w-2xl mx-auto w-full space-y-8">
+            <div className="vbooth-frame p-1 mt-4">
+              <div className="vbooth-marquee">PHOTOS</div>
+            </div>
 
-          <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
-            <div className="sketch-card p-6 md:p-10 border-4 border-black space-y-8 flex-1">
-              
+            <div className="sketch-card p-6 md:p-8 space-y-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="space-y-4 flex-1 w-full">
                   <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <Camera size={12} className="text-blue-500" /> Select Hardware
+                    <Camera size={12} className="text-blue-500" /> Hardware
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pr-0 md:pr-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {cameras.map(c => (
                       <button key={c} onClick={() => setCameraModel(c)} className={cn(
-                        "py-2 rounded-lg border-2 transition-all text-[8px] font-black uppercase",
+                        "py-2 rounded border-2 transition-all text-[8px] font-black uppercase",
                         cameraModel === c ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
                       )}>{c}</button>
                     ))}
                   </div>
                 </div>
                 
-                <div className="w-full md:w-px h-px md:h-24 bg-neutral-200 md:mx-4" />
-
-                <div className="flex gap-6 w-full md:w-auto">
-                  <div className="space-y-4 flex-1 md:flex-none">
+                <div className="flex gap-4 w-full md:w-auto">
+                  <div className="space-y-4 flex-1">
                     <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                       <ChevronUp size={12} className="text-red-500" /> High Angle
                     </label>
-                    <button 
-                      onClick={() => setHighAngle(!highAngle)}
-                      className={cn(
-                        "w-full md:w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
-                        highAngle ? "bg-red-500 border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
-                      )}
-                    >
-                      <div className={cn("w-10 h-10 border-2 rounded rotate-45 mb-1", highAngle ? "border-white bg-red-400" : "border-neutral-100 bg-neutral-50")} />
-                      <span className="text-[8px] font-black uppercase">{highAngle ? 'ON' : 'OFF'}</span>
+                    <button onClick={() => setHighAngle(!highAngle)} className={cn(
+                      "w-full h-16 rounded border-4 transition-all flex flex-col items-center justify-center",
+                      highAngle ? "bg-red-500 border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
+                    )}>
+                      <span className="text-[10px] font-black uppercase">{highAngle ? 'ON' : 'OFF'}</span>
                     </button>
                   </div>
-
-                  <div className="space-y-4 flex-1 md:flex-none">
+                  <div className="space-y-4 flex-1">
                     <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                      <RefreshCw size={12} className="text-emerald-500" /> Device
+                      <RefreshCw size={12} className="text-emerald-500" /> Camera
                     </label>
-                    <button 
-                      onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-                      className={cn(
-                        "w-full md:w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
-                        facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
-                      )}
-                    >
-                      <Camera size={20} className={cn(facingMode === 'environment' ? "text-white" : "text-neutral-200")} />
-                      <span className="text-[8px] font-black uppercase">{facingMode === 'user' ? 'FRONT' : 'BACK'}</span>
+                    <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className={cn(
+                      "w-full h-16 rounded border-4 transition-all flex flex-col items-center justify-center",
+                      facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-500"
+                    )}>
+                      <span className="text-[10px] font-black uppercase">{facingMode === 'user' ? 'FRONT' : 'BACK'}</span>
                     </button>
                   </div>
                 </div>
@@ -487,42 +448,32 @@ export default function PhotoBooth() {
               {highAngle && (
                 <div className="space-y-4 animate-in slide-in-from-top duration-300">
                   <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <ImageIcon size={12} className="text-red-500" /> High Angle Environment
+                    <ImageIcon size={12} className="text-red-500" /> Environment
                   </label>
                   <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => setHighAngleBG('red-cube')}
-                      className={cn(
-                        "py-3 rounded-xl border-2 font-black uppercase text-[10px] transition-all flex items-center justify-center gap-2",
-                        highAngleBG === 'red-cube' ? "bg-red-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
-                      )}
-                    >
-                      <div className="w-3 h-3 bg-red-800 rounded-sm" /> Red Cube
-                    </button>
-                    <button 
-                      onClick={() => setHighAngleBG('curtain')}
-                      className={cn(
-                        "py-3 rounded-xl border-2 font-black uppercase text-[10px] transition-all flex items-center justify-center gap-2",
-                        highAngleBG === 'curtain' ? "bg-slate-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
-                      )}
-                    >
-                      <div className="w-3 h-3 bg-slate-400 rounded-sm" /> Curtain
-                    </button>
+                    <button onClick={() => setHighAngleBG('red-cube')} className={cn(
+                      "py-3 rounded border-2 font-black uppercase text-[10px] transition-all",
+                      highAngleBG === 'red-cube' ? "bg-red-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                    )}>Red Cube</button>
+                    <button onClick={() => setHighAngleBG('curtain')} className={cn(
+                      "py-3 rounded border-2 font-black uppercase text-[10px] transition-all",
+                      highAngleBG === 'curtain' ? "bg-slate-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                    )}>Curtain</button>
                   </div>
                 </div>
               )}
 
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Layers size={12} className="text-blue-500" /> Style Gallery
+                  <Layers size={12} className="text-blue-500" /> Styles
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {(Object.keys(styleIcons) as ShootingStyle[]).map(s => {
                     const Icon = styleIcons[s];
                     return (
                       <button key={s} onClick={() => setShootingStyle(s)} className={cn(
-                        "flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all",
-                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[2px_2px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                        "flex flex-col items-center gap-1 py-3 rounded border-2 transition-all",
+                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
                       )}>
                         <Icon size={14} />
                         <span className="text-[8px] font-black uppercase">{s}</span>
@@ -540,143 +491,98 @@ export default function PhotoBooth() {
                   <div className="flex gap-2">
                     {[1, 2, 3, 4].map(n => (
                       <button key={n} onClick={() => setFrameCount(n)} className={cn(
-                        "flex-1 py-3 rounded-xl border-2 transition-all font-black text-lg",
+                        "flex-1 py-3 rounded border-2 transition-all font-black",
                         frameCount === n ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
                       )}>{n}</button>
                     ))}
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Sparkles size={12} className="text-blue-500" /> Caption
-                </label>
-                <input 
-                  type="text" 
-                  value={caption} 
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Hand-write something..."
-                  className="w-full px-5 py-3 rounded-xl border-3 border-black bg-white text-sm font-bold outline-none text-black"
-                />
-              </div>
             </div>
 
-            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-500 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 text-xl transition-all active:scale-95 border-3 border-black shadow-[6px_6px_0px_black]">
-              JACK IN <ArrowRight />
+            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-500 text-white font-black py-6 rounded border-4 border-black shadow-[8px_8px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all text-2xl italic tracking-tighter uppercase">
+              Start Session
             </button>
           </div>
         </div>
       )}
 
-      {/* --- SHOOTING --- */}
       {step === 'shooting' && (
         <div className="flex-1 flex flex-col p-4 animate-in zoom-in duration-300">
            <div className="flex-1 flex flex-col items-center justify-center max-w-[450px] mx-auto w-full">
-              <div className="relative w-full aspect-[4/5.5] retro-body p-6 flex flex-col items-center shadow-2xl">
-                <div className="w-full flex justify-between px-4 mb-4">
-                   <div className="w-10 h-10 bg-neutral-800 rounded-xl border-4 border-black flex items-center justify-center">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
-                   </div>
-                   <div className="text-[10px] font-black uppercase text-neutral-400 mt-2">{cameraModel} {highAngle && `• HIGH ANGLE (${highAngleBG.toUpperCase()})`}</div>
-                   <div className="w-8 h-16 rainbow-stripe" />
-                </div>
-
+              <div className="w-full vbooth-frame p-2 mb-6">
+                 <div className="vbooth-marquee text-lg">LIVE FEED</div>
+              </div>
+              
+              <div className="relative w-full aspect-square retro-body p-4 flex flex-col items-center shadow-2xl overflow-hidden">
                 <div className={cn(
-                  "relative w-full aspect-square rounded-full border-4 md:border-8 border-black shadow-2xl overflow-hidden ring-8 md:ring-12 ring-white/50",
+                  "w-full h-full border-4 border-black overflow-hidden relative",
                   highAngle ? "bg-red-900" : "bg-black"
                 )}>
-                  <div className={cn("w-full h-full", highAngle && "flex items-center justify-center")}>
-                     <video 
-                      ref={videoRef} 
-                      autoPlay 
-                      playsInline 
-                      muted 
-                      className={cn(
-                        "object-cover scale-x-[-1] opacity-90",
-                        highAngle ? "w-full h-full" : "w-full h-full"
-                      )} 
-                     />
-                  </div>
+                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1] opacity-90" />
                   {isFlashing && <div className="absolute inset-0 bg-white z-50 camera-flash" />}
                   {isCountingDown && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-40 backdrop-blur-[2px]">
-                      <span className="text-white text-8xl md:text-[12rem] font-black italic">{countdown}</span>
+                      <span className="text-white text-9xl font-black italic">{countdown}</span>
                     </div>
                   )}
                   {isProcessing && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-50 backdrop-blur-[4px]">
                       <Loader2 className="w-12 h-12 text-white animate-spin mb-4" />
-                      <span className="text-white text-xs font-black uppercase tracking-widest">Removing Background...</span>
+                      <span className="text-white text-xs font-black uppercase tracking-widest">Processing AI...</span>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-8 flex flex-col items-center gap-2">
-                   <button 
-                    onClick={runCaptureSequence} 
-                    disabled={isCountingDown || isProcessing || capturedFrames.length >= frameCount} 
-                    className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-red-500 border-4 border-black shadow-[0_6px_0px_#991b1b] flex items-center justify-center active:translate-y-1 active:shadow-none transition-all disabled:opacity-50"
-                   >
-                     <div className="w-10 h-10 md:w-16 md:h-16 rounded-full border-4 border-white/20" />
-                   </button>
-                   <p className="text-[8px] font-black tracking-widest text-neutral-400 uppercase">
-                      {isProcessing ? 'AI Processing...' : (capturedFrames.length < frameCount ? `Take Shot ${capturedFrames.length + 1} of ${frameCount}` : 'Sequence Done!')}
-                   </p>
-                </div>
-
-                <div className="absolute -right-8 md:-right-16 top-1/4 flex flex-col gap-2 md:gap-3 scale-75 md:scale-100">
-                  {Array.from({ length: frameCount }).map((_, i) => (
-                    <div key={i} className="w-12 h-10 md:w-20 md:h-16 bg-white p-0.5 md:p-1 shadow-md rounded-sm border border-black rotate-[-2deg] odd:rotate-[2deg] overflow-hidden">
-                      {capturedFrames[i] ? <img src={capturedFrames[i]} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-neutral-50 flex items-center justify-center text-[8px] font-black text-neutral-200">{i + 1}</div>}
-                    </div>
-                  ))}
-                </div>
+                <div className="vbooth-checkered-floor absolute bottom-0 left-0 right-0" />
               </div>
+
+              <div className="mt-8 flex flex-col items-center gap-2">
+                 <button onClick={runCaptureSequence} disabled={isCountingDown || isProcessing || capturedFrames.length >= frameCount} className="w-20 h-20 rounded-full bg-red-600 border-4 border-black shadow-[0_8px_0px_#450a0a] active:translate-y-2 active:shadow-none transition-all disabled:opacity-50" />
+                 <p className="text-[10px] font-black uppercase mt-4">{isProcessing ? 'Developing...' : (capturedFrames.length < frameCount ? `Shot ${capturedFrames.length + 1} / ${frameCount}` : 'Done!')}</p>
+              </div>
+
               <button onClick={() => { if(stream) stream.getTracks().forEach(t => t.stop()); setStep('setup'); }} className="mt-8 text-neutral-400 font-black flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                <RefreshCw size={12} /> Reset
+                <RefreshCw size={12} /> Cancel
               </button>
            </div>
         </div>
       )}
 
-      {/* --- LAB --- */}
       {step === 'lab' && (
         <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-500 touch-pan-y">
           <header className="text-center py-6">
-            <h2 className="text-4xl md:text-5xl font-black text-neutral-900 uppercase italic">LAB RESULTS</h2>
-            <p className="text-neutral-400 uppercase tracking-[0.4em] text-[10px] mt-2 font-black italic">Simulated {cameraModel} Film</p>
+            <h2 className="text-4xl font-black text-neutral-900 uppercase italic tracking-tighter">LAB RESULTS</h2>
+            <p className="text-neutral-400 uppercase tracking-widest text-[10px] mt-2 font-black">Vintage Illustration Finish</p>
           </header>
 
-          <div className="flex-1 flex flex-col items-center gap-10 pb-32">
+          <div className="flex-1 flex flex-col items-center gap-12 pb-32">
              {sessions.map(session => (
                <div key={session.id} className="flex flex-col items-center gap-6 w-full max-w-sm">
-                 <div className="photobooth-strip w-full p-4 bg-white border-4 border-black shadow-2xl">
+                 <div className="photobooth-strip w-full bg-white">
                     {session.frames.map((frame, i) => (
-                      <div key={i} className="strip-photo mb-3 last:mb-0 bg-neutral-900 border-2 border-black overflow-hidden flex items-center justify-center min-h-[400px]">
-                        <img src={frame} className="w-full h-auto object-contain" />
+                      <div key={i} className="strip-photo flex items-center justify-center min-h-[400px]">
+                        <img src={frame} className="w-full h-auto" />
                       </div>
                     ))}
-                    <div className="py-4 text-center border-t-3 border-black mt-3">
-                       <p className="text-xs font-black text-neutral-800 italic uppercase">
-                          {session.caption || `NOVA BOOTH // ${session.camera} // ${session.style} ${session.highAngle ? `// HIGH ANGLE (${session.highAngleBG?.toUpperCase()})` : ''}`}
+                    <div className="py-6 text-center">
+                       <p className="text-[10px] font-black text-neutral-800 italic uppercase">
+                          {caption || `NOVA // ${session.camera} // ${session.style}`}
                        </p>
                     </div>
                  </div>
                  <div className="flex gap-4">
-                    {isDesktop && (
-                      <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-blue-500 border-3 border-black hover:-translate-y-0.5"><Download size={20} /></button>
-                    )}
-                    <button onClick={() => handleShare(session)} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-emerald-500 border-3 border-black hover:-translate-y-0.5"><Share2 size={20} /></button>
-                    <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded-xl shadow-[3px_3px_0px_black] text-red-500 border-3 border-black hover:-translate-y-0.5"><Trash2 size={20} /></button>
+                    <button onClick={() => handleDownload(session)} className="bg-white p-4 rounded shadow-[4px_4px_0px_black] border-2 border-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"><Download size={20} /></button>
+                    <button onClick={() => handleShare(session)} className="bg-white p-4 rounded shadow-[4px_4px_0px_black] border-2 border-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"><Share2 size={20} /></button>
+                    <button onClick={() => setSessions(prev => prev.filter(s => s.id !== session.id))} className="bg-white p-4 rounded shadow-[4px_4px_0px_black] border-2 border-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all text-red-500"><Trash2 size={20} /></button>
                  </div>
                </div>
              ))}
           </div>
           
-          <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-stone-100 via-stone-100/90 to-transparent pointer-events-none">
-            <button onClick={() => { setCapturedFrames([]); setCaption(''); setStep('setup'); }} className="w-full max-w-md mx-auto bg-black text-white px-10 py-5 rounded-2xl font-black shadow-[6px_6px_0px_#3b82f6] border-3 border-black flex items-center justify-center gap-3 active:scale-95 transition-all pointer-events-auto uppercase italic">
-              <Camera size={20} /> Take More Shots
+          <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#f4e4bc] via-[#f4e4bc]/90 to-transparent pointer-events-none">
+            <button onClick={() => { setCapturedFrames([]); setStep('setup'); }} className="w-full max-w-md mx-auto bg-black text-white py-6 rounded border-4 border-black shadow-[6px_6px_0px_#3b82f6] flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none transition-all pointer-events-auto uppercase italic font-black">
+              Return to Booth
             </button>
           </div>
         </div>
