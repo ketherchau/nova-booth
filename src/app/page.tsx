@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp } from 'lucide-react';
+import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
+import { removeBackground } from '@imgly/background-removal';
 
 type ShootingStyle = 'classic' | 'FQS' | 'OFM' | 'retro-grain' | 'cyberpunk' | 'vivid' | 'dreamy' | 'noir';
 
@@ -46,6 +47,7 @@ export default function PhotoBooth() {
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
   const [sessions, setSessions] = useState<PhotoSession[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
@@ -92,7 +94,7 @@ export default function PhotoBooth() {
     };
   }, [step]);
 
-  const captureFrame = () => {
+  const captureFrame = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -100,32 +102,79 @@ export default function PhotoBooth() {
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 300);
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (ctx) {
       canvas.width = 800;
       canvas.height = 600; 
       
-      // BACKGROUND DRAWING (FOR HIGH ANGLE)
+      // 1. RAW CAPTURE (OFFSCREEN)
+      const rawCanvas = document.createElement('canvas');
+      rawCanvas.width = 800;
+      rawCanvas.height = 600;
+      const rawCtx = rawCanvas.getContext('2d');
+      if (!rawCtx) return;
+
+      rawCtx.translate(800, 0);
+      rawCtx.scale(-1, 1);
+      
+      const videoRatio = video.videoWidth / video.videoHeight;
+      const targetRatio = 800 / 600;
+      
+      let sw, sh, sx, sy;
+      if (videoRatio > targetRatio) {
+        sh = video.videoHeight;
+        sw = video.videoHeight * targetRatio;
+        sx = (video.videoWidth - sw) / 2;
+        sy = 0;
+      } else {
+        sw = video.videoWidth;
+        sh = video.videoWidth / targetRatio;
+        sx = 0;
+        sy = (video.videoHeight - sh) / 2;
+      }
+      rawCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
+
+      let finalFrameSource: CanvasImageSource | Blob = rawCanvas;
+
+      // 2. BACKGROUND REMOVAL (IF HIGH ANGLE)
       if (highAngle) {
-        // Fill Red Background
+        setIsProcessing(true);
+        try {
+          const blob = await new Promise<Blob>((resolve) => rawCanvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95));
+          const removedBgBlob = await removeBackground(blob, {
+            progress: (step, progress) => console.log(`BG Removal: ${step} ${Math.round(progress * 100)}%`),
+            model: 'isnet_fp16'
+          });
+          
+          const img = new Image();
+          const url = URL.createObjectURL(removedBgBlob);
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.src = url;
+          });
+          finalFrameSource = img;
+        } catch (err) {
+          console.error("BG Removal Error:", err);
+          // Fallback to raw if it fails
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+
+      // 3. COMPOSE FINAL CANVAS
+      ctx.clearRect(0, 0, 800, 600);
+
+      if (highAngle) {
+        // Red Cube BG
         ctx.fillStyle = '#b71c1c';
         ctx.fillRect(0, 0, 800, 600);
         
-        // Draw Radial Vignette
         const grad = ctx.createRadialGradient(400, 300, 100, 400, 300, 500);
         grad.addColorStop(0, 'rgba(0,0,0,0)');
         grad.addColorStop(1, 'rgba(0,0,0,0.5)');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 800, 600);
         
-        // Draw Corner Shadows
-        const cornerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 300);
-        cornerGrad.addColorStop(0, 'rgba(0,0,0,0.7)');
-        cornerGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = cornerGrad;
-        ctx.fillRect(0,0, 300, 300); // TL
-        
-        // Floor Diamond
         ctx.save();
         ctx.translate(400, 300);
         ctx.rotate(Math.PI / 4);
@@ -133,62 +182,22 @@ export default function PhotoBooth() {
         ctx.shadowBlur = 40;
         ctx.shadowColor = 'rgba(0,0,0,0.4)';
         ctx.fillRect(-150, -150, 300, 300);
-        ctx.restore();
-      } else {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, 800, 600);
-      }
-      
-      // VIDEO DRAWING
-      ctx.save();
-      
-      if (highAngle) {
-        // Mask to the floor diamond
+        
+        // Clip to Diamond and draw Person
         ctx.beginPath();
-        ctx.translate(400, 300);
-        ctx.rotate(Math.PI / 4);
         ctx.rect(-145, -145, 290, 290);
         ctx.clip();
         ctx.rotate(-Math.PI / 4);
-        ctx.translate(-400, -300);
-        
-        // MIX-BLEND-SCREEN KEYING (Simulates removing dark backgrounds)
-        ctx.globalCompositeOperation = 'screen';
-        
-        // Draw video centered on floor
-        ctx.translate(800, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 400-200, 300-200, 400, 400); 
+        ctx.drawImage(finalFrameSource as any, -200, -200, 400, 400); 
+        ctx.restore();
       } else {
-        ctx.translate(800, 0);
-        ctx.scale(-1, 1);
-        
-        const videoRatio = video.videoWidth / video.videoHeight;
-        const targetRatio = 800 / 600;
-        
-        let sw, sh, sx, sy;
-        if (videoRatio > targetRatio) {
-          sh = video.videoHeight;
-          sw = video.videoHeight * targetRatio;
-          sx = (video.videoWidth - sw) / 2;
-          sy = 0;
-        } else {
-          sw = video.videoWidth;
-          sh = video.videoWidth / targetRatio;
-          sx = 0;
-          sy = (video.videoHeight - sh) / 2;
-        }
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
+        ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
       }
-      
-      ctx.restore();
       
       // APPLY PIXELS.JS FILTERS
       try {
         if (window.pixelsJS) {
           const filters = getPixelsFilters(cameraModel, shootingStyle);
-          console.log("Applying Pixels.js filter stack:", filters);
-          
           let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           filters.forEach(filterName => {
             if (filterName !== 'none') {
@@ -289,7 +298,7 @@ export default function PhotoBooth() {
   };
 
   const runCaptureSequence = () => {
-    if (isCountingDown) return;
+    if (isCountingDown || isProcessing) return;
     setCapturedFrames([]);
     
     let currentIdx = 0;
@@ -304,7 +313,7 @@ export default function PhotoBooth() {
             captureFrame();
             currentIdx++;
             if (currentIdx < frameCount) {
-              setTimeout(startOne, 1500);
+              setTimeout(startOne, highAngle ? 4000 : 1500); // More time for AI
             }
             return 3;
           }
@@ -477,7 +486,6 @@ export default function PhotoBooth() {
                   "relative w-full aspect-square rounded-full border-4 md:border-8 border-black shadow-2xl overflow-hidden ring-8 md:ring-12 ring-white/50",
                   highAngle ? "bg-red-900" : "bg-black"
                 )}>
-                  {/* {highAngle && <div className="red-cube-floor" />} */}
                   <div className={cn("w-full h-full", highAngle && "flex items-center justify-center")}>
                      <video 
                       ref={videoRef} 
@@ -496,18 +504,24 @@ export default function PhotoBooth() {
                       <span className="text-white text-8xl md:text-[12rem] font-black italic">{countdown}</span>
                     </div>
                   )}
+                  {isProcessing && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-50 backdrop-blur-[4px]">
+                      <Loader2 className="w-12 h-12 text-white animate-spin mb-4" />
+                      <span className="text-white text-xs font-black uppercase tracking-widest">Removing Background...</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 flex flex-col items-center gap-2">
                    <button 
                     onClick={runCaptureSequence} 
-                    disabled={isCountingDown || capturedFrames.length >= frameCount} 
+                    disabled={isCountingDown || isProcessing || capturedFrames.length >= frameCount} 
                     className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-red-500 border-4 border-black shadow-[0_6px_0px_#991b1b] flex items-center justify-center active:translate-y-1 active:shadow-none transition-all disabled:opacity-50"
                    >
                      <div className="w-10 h-10 md:w-16 md:h-16 rounded-full border-4 border-white/20" />
                    </button>
                    <p className="text-[8px] font-black tracking-widest text-neutral-400 uppercase">
-                      {capturedFrames.length < frameCount ? `Take Shot ${capturedFrames.length + 1} of ${frameCount}` : 'Sequence Done!'}
+                      {isProcessing ? 'AI Processing...' : (capturedFrames.length < frameCount ? `Take Shot ${capturedFrames.length + 1} of ${frameCount}` : 'Sequence Done!')}
                    </p>
                 </div>
 
