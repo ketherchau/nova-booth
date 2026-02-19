@@ -88,13 +88,11 @@ export default function PhotoBooth() {
         audio: false
       };
       
-      console.log("Starting camera with facingMode:", facingMode);
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       setStream(newStream);
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
-        // Important: reload video element
         videoRef.current.load();
       }
       setError(null);
@@ -123,9 +121,6 @@ export default function PhotoBooth() {
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (ctx) {
-      canvas.width = 800;
-      canvas.height = 600; 
-      
       // 1. RAW CAPTURE (OFFSCREEN)
       const rawCanvas = document.createElement('canvas');
       rawCanvas.width = 800;
@@ -194,24 +189,16 @@ export default function PhotoBooth() {
       }
 
       // 3. COMPOSE FINAL CANVAS
-      ctx.clearRect(0, 0, 800, 600);
-
       if (highAngle && backplateRef.current) {
-        // 1. SET CANVAS TO BACKGROUND'S ORIGINAL SIZE
         const bp = backplateRef.current;
         canvas.width = bp.width;
         canvas.height = bp.height;
-        
-        // 2. DRAW BACKGROUND (Original resolution)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(bp, 0, 0);
 
-        // 3. SCALE PEOPLE LAYER RELATIVE TO THE NEW CANVAS SIZE
-        // We'll aim for people to occupy about 60% of the background width
         const personWidth = bp.width * 0.6;
-        const personHeight = personWidth * (rawCanvas.height / rawCanvas.width);
-        
+        const personHeight = personWidth * (600 / 800);
         const px = (canvas.width - personWidth) / 2;
-        // Sit the feet near the bottom-third where the floor diamond is
         const py = (canvas.height - personHeight) / 2 - (bp.height * 0.04); 
 
         ctx.save();
@@ -229,11 +216,12 @@ export default function PhotoBooth() {
           maskCtx.fillStyle = bottomFade;
           maskCtx.fillRect(0, 0, personWidth, personHeight);
           ctx.drawImage(maskCanvas, px, py);
-        } else {
-          ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
         }
         ctx.restore();
       } else {
+        canvas.width = 800;
+        canvas.height = 600;
+        ctx.clearRect(0, 0, 800, 600);
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
       }
       
@@ -299,13 +287,20 @@ export default function PhotoBooth() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const frameWidth = 800;
-    const frameHeight = 600;
     const padding = 40;
     const gap = 20;
 
-    canvas.width = frameWidth + (padding * 2);
-    canvas.height = (frameHeight * frames.length) + (gap * (frames.length - 1)) + (padding * 2) + 80;
+    // IF HIGH ANGLE, USE BACKPLATE DIMENSIONS FOR STRIP SIZING
+    let finalFrameWidth = 800;
+    let finalFrameHeight = 600;
+
+    if (highAngle && backplateRef.current) {
+      finalFrameWidth = backplateRef.current.width;
+      finalFrameHeight = backplateRef.current.height;
+    }
+
+    canvas.width = finalFrameWidth + (padding * 2);
+    canvas.height = (finalFrameHeight * frames.length) + (gap * (frames.length - 1)) + (padding * 2) + 80;
 
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -314,11 +309,11 @@ export default function PhotoBooth() {
     frames.forEach((src, i) => {
       const img = new Image();
       img.onload = () => {
-        ctx.drawImage(img, padding, padding + (i * (frameHeight + gap)), frameWidth, frameHeight);
+        ctx.drawImage(img, padding, padding + (i * (finalFrameHeight + gap)), finalFrameWidth, finalFrameHeight);
         loadedCount++;
         if (loadedCount === frames.length) {
           ctx.fillStyle = '#1a1a1a';
-          ctx.font = 'italic bold 28px "Comic Sans MS", cursive';
+          ctx.font = `italic bold ${Math.max(20, finalFrameWidth * 0.035)}px "Comic Sans MS", cursive`;
           ctx.textAlign = 'center';
           const bottomText = caption || `NOVA BOOTH // ${cameraModel} // ${shootingStyle.toUpperCase()}`;
           ctx.fillText(bottomText, canvas.width / 2, canvas.height - 40);
