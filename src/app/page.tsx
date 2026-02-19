@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { removeBackground } from '@imgly/background-removal';
 
-type ShootingStyle = 'classic' | 'FQS' | 'OFM' | 'retro-grain' | 'cyberpunk' | 'vivid' | 'dreamy' | 'noir';
+type ShootingStyle = 'standard' | 'classic' | 'FQS' | 'OFM' | 'retro-grain' | 'cyberpunk' | 'vivid' | 'dreamy' | 'noir';
 
 type CameraModel = 
+  | 'Normal'
   | 'SX-70' 
   | '600 Series' 
   | 'Spectra' 
@@ -39,8 +40,8 @@ declare global {
 
 export default function PhotoBooth() {
   const [step, setStep] = useState<'setup' | 'shooting' | 'lab'>('setup');
-  const [shootingStyle, setShootingStyle] = useState<ShootingStyle>('classic');
-  const [cameraModel, setCameraModel] = useState<CameraModel>('600 Series');
+  const [shootingStyle, setShootingStyle] = useState<ShootingStyle>('standard');
+  const [cameraModel, setCameraModel] = useState<CameraModel>('Normal');
   const [frameCount, setFrameCount] = useState<number>(4);
   const [highAngle, setHighAngle] = useState<boolean>(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -264,6 +265,7 @@ export default function PhotoBooth() {
   const getPixelsFilters = (camera: CameraModel, style: ShootingStyle) => {
     const stack: string[] = [];
     switch (camera) {
+      case 'Normal': break; // No hardware filter
       case 'SX-70': stack.push('rosetint'); break;
       case '600 Series': stack.push('mellow'); break;
       case 'Spectra': stack.push('solange'); break;
@@ -276,6 +278,7 @@ export default function PhotoBooth() {
       case 'Impulse': stack.push('warmth'); break;
     }
     switch (style) {
+      case 'standard': break; // No style overlay
       case 'FQS': stack.push('sunset'); break;
       case 'OFM': stack.push('greyscale'); break;
       case 'retro-grain': stack.push('vintage'); break;
@@ -397,6 +400,7 @@ export default function PhotoBooth() {
   };
 
   const styleIcons: Record<ShootingStyle, any> = {
+    standard: Sparkles,
     classic: Camera,
     FQS: Sun,
     OFM: Moon,
@@ -407,7 +411,7 @@ export default function PhotoBooth() {
     'noir': Layers
   };
 
-  const cameras: CameraModel[] = ['SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
+  const cameras: CameraModel[] = ['Normal', 'SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
 
   return (
     <div className="fixed inset-0 bg-stone-100 flex flex-col overflow-hidden safe-top safe-bottom touch-none">
