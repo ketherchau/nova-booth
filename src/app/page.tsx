@@ -191,15 +191,20 @@ export default function PhotoBooth() {
       // 3. COMPOSE FINAL CANVAS
       if (highAngle && backplateRef.current) {
         const bp = backplateRef.current;
+        // 1. LOCK CANVAS TO NATIVE BACKPLATE RESOLUTION
         canvas.width = bp.width;
         canvas.height = bp.height;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 2. DRAW BACKPLATE (1:1)
         ctx.drawImage(bp, 0, 0);
 
+        // 3. SCALE PEOPLE PROPORTIONALLY TO THE NATIVE RESOLUTION
+        // The people layer should occupy a consistent percentage of the background width
         const personWidth = bp.width * 0.6;
-        const personHeight = personWidth * (600 / 800);
+        const personHeight = personWidth * (600 / 800); // Correct 4:3 capture ratio
         const px = (canvas.width - personWidth) / 2;
-        const py = (canvas.height - personHeight) / 2 - (bp.height * 0.04); 
+        const py = (canvas.height - personHeight) / 2 - (bp.height * 0.03); 
 
         ctx.save();
         const maskCanvas = document.createElement('canvas');
@@ -295,6 +300,7 @@ export default function PhotoBooth() {
     let finalFrameHeight = 600;
 
     if (highAngle && backplateRef.current) {
+      // FORCE USE NATIVE IMAGE DIMENSIONS
       finalFrameWidth = backplateRef.current.width;
       finalFrameHeight = backplateRef.current.height;
     }
@@ -309,6 +315,7 @@ export default function PhotoBooth() {
     frames.forEach((src, i) => {
       const img = new Image();
       img.onload = () => {
+        // Draw each frame using the precise final dimensions to avoid cropping
         ctx.drawImage(img, padding, padding + (i * (finalFrameHeight + gap)), finalFrameWidth, finalFrameHeight);
         loadedCount++;
         if (loadedCount === frames.length) {
