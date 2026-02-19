@@ -78,20 +78,31 @@ export default function PhotoBooth() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode, width: { ideal: 1080 }, height: { ideal: 1080 } },
+      
+      const constraints = {
+        video: { 
+          facingMode: facingMode,
+          width: { ideal: 1080 }, 
+          height: { ideal: 1080 } 
+        },
         audio: false
-      });
+      };
+      
+      console.log("Starting camera with facingMode:", facingMode);
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
       setStream(newStream);
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
+        // Important: reload video element
+        videoRef.current.load();
       }
       setError(null);
     } catch (err) {
       console.error("Camera error:", err);
-      setError("Camera access denied.");
+      setError(`Camera access denied: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, [stream, facingMode]);
+  }, [facingMode]);
 
   useEffect(() => {
     if (step === 'shooting') {
@@ -100,7 +111,7 @@ export default function PhotoBooth() {
     return () => {
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [step, startCamera]);
+  }, [step, facingMode, startCamera]);
 
   const captureFrame = async () => {
     const video = videoRef.current;
