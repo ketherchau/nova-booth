@@ -211,12 +211,12 @@ export default function PhotoBooth() {
         const personWidth = 500; // Upgraded to 500px
         const personHeight = 375; // Maintain 4:3 aspect ratio
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 - 10; // Refined to -10px offset
+        const py = (600 - personHeight) / 2 - 24; // Refined to -24px offset
 
         ctx.save();
         
         // ADD SECONDARY MASKING FOR STRAY FLOOR PIXELS
-        // We use a gradient to softly fade the bottom 10% of the people capture
+        // We use a gradient to softly fade the bottom 5% of the people capture
         const maskCanvas = document.createElement('canvas');
         maskCanvas.width = personWidth;
         maskCanvas.height = personHeight;
@@ -228,7 +228,7 @@ export default function PhotoBooth() {
           maskCtx.globalCompositeOperation = 'destination-in';
           const bottomFade = maskCtx.createLinearGradient(0, 0, 0, personHeight);
           bottomFade.addColorStop(0, 'rgba(0,0,0,1)');
-          bottomFade.addColorStop(0.9, 'rgba(0,0,0,1)'); // Start fading at 90%
+          bottomFade.addColorStop(0.95, 'rgba(0,0,0,1)'); // Start fading at 95% (Top 5% limit)
           bottomFade.addColorStop(1, 'rgba(0,0,0,0)'); // Fade to zero at the very bottom
           maskCtx.fillStyle = bottomFade;
           maskCtx.fillRect(0, 0, personWidth, personHeight);
