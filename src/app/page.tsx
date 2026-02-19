@@ -29,6 +29,12 @@ interface PhotoSession {
   stripUrl?: string;
 }
 
+declare global {
+  interface Window {
+    pixelsJS: any;
+  }
+}
+
 export default function PhotoBooth() {
   const [step, setStep] = useState<'setup' | 'shooting' | 'lab'>('setup');
   const [shootingStyle, setShootingStyle] = useState<ShootingStyle>('classic');
@@ -120,20 +126,27 @@ export default function PhotoBooth() {
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
       ctx.restore();
       
-      // Combine Camera Characteristics + Shooting Style
-      const filter = getCombinedFilter(cameraModel, shootingStyle);
-      if (filter !== 'none') {
-        ctx.filter = filter;
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        tempCanvas.getContext('2d')?.drawImage(canvas, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(tempCanvas, 0, 0);
-        ctx.filter = 'none';
+      // APPLY PIXELS.JS FILTERS
+      try {
+        if (window.pixelsJS) {
+          const pixelsFilter = getPixelsFilter(cameraModel, shootingStyle);
+          console.log("Applying Pixels.js filter:", pixelsFilter);
+          
+          if (pixelsFilter !== 'none') {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const filteredData = window.pixelsJS.filterImgData(imageData, pixelsFilter);
+            ctx.putImageData(filteredData, 0, 0);
+            console.log("putImageData executed with filtered data");
+          }
+        } else {
+          console.error("CRITICAL: window.pixelsJS is UNDEFINED. Filter skipped.");
+        }
+      } catch (err) {
+        console.error("Pixels.js error:", err);
       }
       
       const frameUrl = canvas.toDataURL('image/jpeg', 0.9);
+      console.log("Frame captured. URL Length:", frameUrl.length);
       setCapturedFrames(prev => {
         const next = [...prev, frameUrl];
         if (next.length === frameCount) {
@@ -145,6 +158,25 @@ export default function PhotoBooth() {
         }
         return next;
       });
+    }
+  };
+
+  const getPixelsFilter = (camera: CameraModel, style: ShootingStyle) => {
+    // Mapping our models/styles to Pixels.js filter names
+    if (style === 'noir' || style === 'OFM') return 'twenties';
+    if (style === 'cyberpunk') return 'ocean';
+    if (style === 'vivid') return 'specks_redline';
+    if (style === 'dreamy') return 'perfume';
+    if (style === 'retro-grain') return 'vintage';
+    if (style === 'FQS') return 'sunset';
+    
+    switch (camera) {
+      case 'SX-70': return 'rosetint';
+      case '600 Series': return 'mellow';
+      case 'Spectra': return 'solange';
+      case 'Rollfilm': return 'twenties';
+      case 'Go': return 'serenity';
+      default: return 'none';
     }
   };
 
@@ -245,36 +277,6 @@ export default function PhotoBooth() {
     } else {
       handleDownload(session);
     }
-  };
-
-  const getCombinedFilter = (camera: CameraModel, style: ShootingStyle) => {
-    let base = 'none';
-    
-    // 1. Apply Camera-specific baseline
-    switch (camera) {
-      case 'SX-70': base = 'saturate(1.4) contrast(1.2) brightness(1.05) hue-rotate(-5deg)'; break;
-      case '600 Series': base = 'saturate(0.9) contrast(0.9) brightness(1.1) sepia(0.1)'; break;
-      case 'Spectra': base = 'saturate(0.8) brightness(1.1) hue-rotate(320deg) blur(0.3px)'; break;
-      case 'Go': base = 'saturate(0.7) contrast(0.8) brightness(1.2) blur(1px)'; break;
-      case 'Rollfilm': base = 'grayscale(1) contrast(1.5) sepia(0.2)'; break;
-      case 'Packfilm': base = 'saturate(1.1) contrast(1.1) brightness(1) sepia(0.05)'; break;
-      case 'I-2': base = 'saturate(1.2) contrast(1.1) brightness(1.05)'; break;
-      case 'Impulse': base = 'saturate(1) contrast(1) brightness(1.1) sepia(0.05)'; break;
-      default: base = 'none';
-    }
-
-    // 2. Apply Style-specific overlay
-    switch (style) {
-      case 'FQS': base += ' sepia(0.4) contrast(1.1)'; break;
-      case 'OFM': base += ' grayscale(1) contrast(1.2)'; break;
-      case 'retro-grain': base += ' saturate(1.3) contrast(1.1) brightness(1.1)'; break;
-      case 'cyberpunk': base += ' hue-rotate(280deg) saturate(1.8) contrast(1.1)'; break;
-      case 'vivid': base += ' saturate(2) contrast(1.1)'; break;
-      case 'dreamy': base += ' blur(0.5px) brightness(1.1) saturate(0.8)'; break;
-      case 'noir': base += ' grayscale(1) contrast(2) brightness(0.8)'; break;
-    }
-
-    return base;
   };
 
   const styleIcons: Record<ShootingStyle, any> = {
