@@ -58,11 +58,18 @@ export default function PhotoBooth() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const backplateRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 1024);
     checkIsDesktop();
     window.addEventListener('resize', checkIsDesktop);
+
+    // Preload Final Reference Backplate
+    const img = new Image();
+    img.src = '/red-cube-final-bg.jpg';
+    backplateRef.current = img;
+
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
 
@@ -178,44 +185,10 @@ export default function PhotoBooth() {
       // 3. COMPOSE FINAL CANVAS
       ctx.clearRect(0, 0, 800, 600);
 
-      if (highAngle) {
-        // Red Cube V2 Procedural
-        ctx.fillStyle = '#b71c1c';
-        ctx.fillRect(0, 0, 800, 600);
-
-        // Perspective Walls
-        ctx.fillStyle = '#8e0000';
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo(800, 0); ctx.lineTo(600, 200); ctx.lineTo(200, 200);
-        ctx.fill();
-
-        ctx.fillStyle = '#d32f2f';
-        ctx.beginPath();
-        ctx.moveTo(0, 600); ctx.lineTo(800, 600); ctx.lineTo(600, 400); ctx.lineTo(200, 400);
-        ctx.fill();
-
-        ctx.fillStyle = '#7f0000';
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo(0, 600); ctx.lineTo(200, 400); ctx.lineTo(200, 200);
-        ctx.fill();
-
-        ctx.fillStyle = '#c62828';
-        ctx.beginPath();
-        ctx.moveTo(800, 0); ctx.lineTo(800, 600); ctx.lineTo(600, 400); ctx.lineTo(600, 200);
-        ctx.fill();
-
-        // Floor (Diamond)
-        ctx.fillStyle = '#4a0000'; // Darker floor as requested
-        ctx.beginPath();
-        ctx.moveTo(400, 200); ctx.lineTo(600, 300); ctx.lineTo(400, 400); ctx.lineTo(200, 300);
-        ctx.fill();
-
-        // Lighting Overlays
-        const grad = ctx.createRadialGradient(400, 300, 50, 400, 300, 500);
-        grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.8)'); // Moodier darkness
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 800, 600);
+      if (highAngle && backplateRef.current) {
+        // Draw the Reference Image as Background
+        const bp = backplateRef.current;
+        ctx.drawImage(bp, 0, 0, 800, 600);
 
         const personWidth = 500;
         const personHeight = 375;
@@ -471,7 +444,7 @@ export default function PhotoBooth() {
                       onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
                       className={cn(
                         "w-full md:w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
-                        facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-500"
+                        facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
                       )}
                     >
                       <Camera size={20} className={cn(facingMode === 'environment' ? "text-white" : "text-neutral-200")} />
