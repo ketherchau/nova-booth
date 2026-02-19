@@ -129,15 +129,19 @@ export default function PhotoBooth() {
       // APPLY PIXELS.JS FILTERS
       try {
         if (window.pixelsJS) {
-          const pixelsFilter = getPixelsFilter(cameraModel, shootingStyle);
-          console.log("Applying Pixels.js filter:", pixelsFilter);
+          const filters = getPixelsFilters(cameraModel, shootingStyle);
+          console.log("Applying Pixels.js filter stack:", filters);
           
-          if (pixelsFilter !== 'none') {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const filteredData = window.pixelsJS.filterImgData(imageData, pixelsFilter);
-            ctx.putImageData(filteredData, 0, 0);
-            console.log("putImageData executed with filtered data");
-          }
+          let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          filters.forEach(filterName => {
+            if (filterName !== 'none') {
+              imageData = window.pixelsJS.filterImgData(imageData, filterName);
+            }
+          });
+          
+          ctx.putImageData(imageData, 0, 0);
+          console.log("putImageData executed with filtered data");
         } else {
           console.error("CRITICAL: window.pixelsJS is UNDEFINED. Filter skipped.");
         }
@@ -161,23 +165,37 @@ export default function PhotoBooth() {
     }
   };
 
-  const getPixelsFilter = (camera: CameraModel, style: ShootingStyle) => {
-    // Mapping our models/styles to Pixels.js filter names
-    if (style === 'noir' || style === 'OFM') return 'twenties';
-    if (style === 'cyberpunk') return 'ocean';
-    if (style === 'vivid') return 'specks_redline';
-    if (style === 'dreamy') return 'perfume';
-    if (style === 'retro-grain') return 'vintage';
-    if (style === 'FQS') return 'sunset';
-    
+  const getPixelsFilters = (camera: CameraModel, style: ShootingStyle) => {
+    const stack: string[] = [];
+
+    // 1. Hardware Sensor Base
     switch (camera) {
-      case 'SX-70': return 'rosetint';
-      case '600 Series': return 'mellow';
-      case 'Spectra': return 'solange';
-      case 'Rollfilm': return 'twenties';
-      case 'Go': return 'serenity';
-      default: return 'none';
+      case 'SX-70': stack.push('rosetint'); break;
+      case '600 Series': stack.push('mellow'); break;
+      case 'Spectra': stack.push('solange'); break;
+      case 'Go': stack.push('serenity'); break;
+      case 'Rollfilm': stack.push('twenties'); break;
+      case 'Packfilm': stack.push('vintage'); break;
+      case 'i-Type': stack.push('neue'); break;
+      case 'Flip': stack.push('invert'); break;
+      case 'I-2': stack.push('incbrightness'); break;
+      case 'Impulse': stack.push('warmth'); break;
+      default: break;
     }
+
+    // 2. Style "Chemistry" Overlay
+    switch (style) {
+      case 'FQS': stack.push('sunset'); break;
+      case 'OFM': stack.push('greyscale'); break;
+      case 'retro-grain': stack.push('vintage'); break;
+      case 'cyberpunk': stack.push('ocean'); break;
+      case 'vivid': stack.push('eclectic'); break;
+      case 'dreamy': stack.push('perfume'); break;
+      case 'noir': stack.push('twenties'); break;
+      default: break;
+    }
+
+    return stack.length > 0 ? stack : ['none'];
   };
 
   const generateStrip = (frames: string[]) => {
