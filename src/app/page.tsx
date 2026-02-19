@@ -197,9 +197,26 @@ export default function PhotoBooth() {
       ctx.clearRect(0, 0, 800, 600);
 
       if (highAngle && backplateRef.current) {
-        // Draw the Reference Image as Background
+        // Draw the Reference Image as Background (Preserve aspect ratio - COVER logic)
         const bp = backplateRef.current;
-        ctx.drawImage(bp, 0, 0, 800, 600);
+        const bpRatio = bp.width / bp.height;
+        const canvasRatio = 800 / 600;
+        
+        let bw, bh, bx, by;
+        if (bpRatio > canvasRatio) {
+          // Image is wider than canvas
+          bh = 600;
+          bw = 600 * bpRatio;
+          bx = (800 - bw) / 2;
+          by = 0;
+        } else {
+          // Image is taller than canvas
+          bw = 800;
+          bh = 800 / bpRatio;
+          bx = 0;
+          by = (600 - bh) / 2;
+        }
+        ctx.drawImage(bp, bx, by, bw, bh);
 
         const personWidth = 500;
         const personHeight = 375;
