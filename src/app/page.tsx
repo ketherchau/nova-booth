@@ -171,22 +171,36 @@ export default function PhotoBooth() {
       ctx.clearRect(0, 0, 800, 600);
 
       if (highAngle && backplateRef.current) {
-        // Draw the Generated Red Cube Backplate
-        ctx.drawImage(backplateRef.current, 0, 0, 800, 600);
-
-        // Draw Person keyed onto the center
-        // Center area in V11 is roughly 300x300 at center
-        ctx.save();
-        ctx.beginPath();
-        // Geometry for the diamond floor area mask
-        ctx.moveTo(400, 200);
-        ctx.lineTo(600, 300);
-        ctx.lineTo(400, 400);
-        ctx.lineTo(200, 300);
-        ctx.closePath();
-        ctx.clip();
+        // Draw the Generated Red Cube Backplate (Maintain aspect ratio)
+        const bp = backplateRef.current;
+        const bpRatio = bp.width / bp.height;
+        const canvasRatio = 800 / 600;
         
-        ctx.drawImage(finalFrameSource as any, 200, 150, 400, 300);
+        let bw, bh, bx, by;
+        if (bpRatio > canvasRatio) {
+          bh = 600;
+          bw = 600 * bpRatio;
+          bx = (800 - bw) / 2;
+          by = 0;
+        } else {
+          bw = 800;
+          bh = 800 / bpRatio;
+          bx = 0;
+          by = (600 - bh) / 2;
+        }
+        ctx.drawImage(bp, bx, by, bw, bh);
+
+        // Draw Person on top of the background (NO CLIPPING, scale properly)
+        // Center of the diamond in V11 is roughly at (400, 300)
+        // We'll scale the person to occupy a significant portion of the screen
+        const personWidth = 600;
+        const personHeight = 450;
+        const px = (800 - personWidth) / 2;
+        const py = (600 - personHeight) / 2 + 50; // Shift down slightly toward floor
+
+        ctx.save();
+        // Removed ctx.clip() to prevent hair/body cut-off
+        ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
         ctx.restore();
       } else {
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
