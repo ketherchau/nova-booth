@@ -43,6 +43,7 @@ export default function PhotoBooth() {
   const [cameraModel, setCameraModel] = useState<CameraModel>('600 Series');
   const [frameCount, setFrameCount] = useState<number>(4);
   const [highAngle, setHighAngle] = useState<boolean>(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [caption, setCaption] = useState<string>('');
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
   const [sessions, setSessions] = useState<PhotoSession[]>([]);
@@ -57,18 +58,11 @@ export default function PhotoBooth() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const backplateRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 1024);
     checkIsDesktop();
     window.addEventListener('resize', checkIsDesktop);
-
-    // Preload Backplate
-    const img = new Image();
-    img.src = '/2026-02-19-red-cube-clean-720p.png';
-    backplateRef.current = img;
-
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
 
@@ -78,7 +72,7 @@ export default function PhotoBooth() {
         stream.getTracks().forEach(track => track.stop());
       }
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1080 } },
+        video: { facingMode: facingMode, width: { ideal: 1080 }, height: { ideal: 1080 } },
         audio: false
       });
       setStream(newStream);
@@ -90,7 +84,7 @@ export default function PhotoBooth() {
       console.error("Camera error:", err);
       setError("Camera access denied.");
     }
-  }, [stream]);
+  }, [stream, facingMode]);
 
   useEffect(() => {
     if (step === 'shooting') {
@@ -99,7 +93,7 @@ export default function PhotoBooth() {
     return () => {
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [step]);
+  }, [step, startCamera]);
 
   const captureFrame = async () => {
     const video = videoRef.current;
@@ -129,7 +123,6 @@ export default function PhotoBooth() {
       
       let sw, sh, sx, sy;
       if (highAngle) {
-        // High Angle: Use "Contain" logic to ensure the WHOLE body is captured in the 800x600 raw buffer
         if (videoRatio > targetRatio) {
           sw = video.videoWidth;
           sh = video.videoWidth / targetRatio;
@@ -142,7 +135,6 @@ export default function PhotoBooth() {
           sy = 0;
         }
       } else {
-        // Normal Mode: Use "Cover" logic (previous behavior)
         if (videoRatio > targetRatio) {
           sh = video.videoHeight;
           sw = video.videoHeight * targetRatio;
@@ -186,58 +178,68 @@ export default function PhotoBooth() {
       // 3. COMPOSE FINAL CANVAS
       ctx.clearRect(0, 0, 800, 600);
 
-      if (highAngle && backplateRef.current) {
-        // Draw the Generated Red Cube Backplate (Maintain aspect ratio)
-        const bp = backplateRef.current;
-        const bpRatio = bp.width / bp.height;
-        const canvasRatio = 800 / 600;
-        
-        let bw, bh, bx, by;
-        if (bpRatio > canvasRatio) {
-          bh = 600;
-          bw = 600 * bpRatio;
-          bx = (800 - bw) / 2;
-          by = 0;
-        } else {
-          bw = 800;
-          bh = 800 / bpRatio;
-          bx = 0;
-          by = (600 - bh) / 2;
-        }
-        ctx.drawImage(bp, bx, by, bw, bh);
+      if (highAngle) {
+        // Red Cube V2 Procedural
+        ctx.fillStyle = '#b71c1c';
+        ctx.fillRect(0, 0, 800, 600);
 
-        // Draw Person on top of the background (RESCALED properly)
-        // Center of the diamond in V11 is roughly at (400, 300)
-        const personWidth = 500; // Upgraded to 500px
-        const personHeight = 375; // Maintain 4:3 aspect ratio
+        // Perspective Walls
+        ctx.fillStyle = '#8e0000';
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(800, 0); ctx.lineTo(600, 200); ctx.lineTo(200, 200);
+        ctx.fill();
+
+        ctx.fillStyle = '#d32f2f';
+        ctx.beginPath();
+        ctx.moveTo(0, 600); ctx.lineTo(800, 600); ctx.lineTo(600, 400); ctx.lineTo(200, 400);
+        ctx.fill();
+
+        ctx.fillStyle = '#7f0000';
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(0, 600); ctx.lineTo(200, 400); ctx.lineTo(200, 200);
+        ctx.fill();
+
+        ctx.fillStyle = '#c62828';
+        ctx.beginPath();
+        ctx.moveTo(800, 0); ctx.lineTo(800, 600); ctx.lineTo(600, 400); ctx.lineTo(600, 200);
+        ctx.fill();
+
+        // Floor (Diamond)
+        ctx.fillStyle = '#4a0000'; // Darker floor as requested
+        ctx.beginPath();
+        ctx.moveTo(400, 200); ctx.lineTo(600, 300); ctx.lineTo(400, 400); ctx.lineTo(200, 300);
+        ctx.fill();
+
+        // Lighting Overlays
+        const grad = ctx.createRadialGradient(400, 300, 50, 400, 300, 500);
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.8)'); // Moodier darkness
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 600);
+
+        const personWidth = 500;
+        const personHeight = 375;
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 - 24; // Refined to -24px offset
+        const py = (600 - personHeight) / 2 - 24;
 
         ctx.save();
-        
-        // ADD SECONDARY MASKING FOR STRAY FLOOR PIXELS
-        // We use a gradient to softly fade the bottom 5% of the people capture
         const maskCanvas = document.createElement('canvas');
         maskCanvas.width = personWidth;
         maskCanvas.height = personHeight;
         const maskCtx = maskCanvas.getContext('2d');
         if (maskCtx) {
           maskCtx.drawImage(finalFrameSource as any, 0, 0, personWidth, personHeight);
-          
-          // Apply a "cleanup" mask to the bottom edge
           maskCtx.globalCompositeOperation = 'destination-in';
           const bottomFade = maskCtx.createLinearGradient(0, 0, 0, personHeight);
           bottomFade.addColorStop(0, 'rgba(0,0,0,1)');
-          bottomFade.addColorStop(0.95, 'rgba(0,0,0,1)'); // Start fading at 95% (Top 5% limit)
-          bottomFade.addColorStop(1, 'rgba(0,0,0,0)'); // Fade to zero at the very bottom
+          bottomFade.addColorStop(0.95, 'rgba(0,0,0,1)');
+          bottomFade.addColorStop(1, 'rgba(0,0,0,0)');
           maskCtx.fillStyle = bottomFade;
           maskCtx.fillRect(0, 0, personWidth, personHeight);
-          
           ctx.drawImage(maskCanvas, px, py);
         } else {
           ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
         }
-        
         ctx.restore();
       } else {
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
@@ -427,12 +429,12 @@ export default function PhotoBooth() {
           <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
             <div className="sketch-card p-6 md:p-10 border-4 border-black space-y-8 flex-1">
               
-              <div className="flex justify-between items-center">
-                <div className="space-y-4 flex-1">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="space-y-4 flex-1 w-full">
                   <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                     <Camera size={12} className="text-blue-500" /> Select Hardware
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pr-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pr-0 md:pr-4">
                     {cameras.map(c => (
                       <button key={c} onClick={() => setCameraModel(c)} className={cn(
                         "py-2 rounded-lg border-2 transition-all text-[8px] font-black uppercase",
@@ -442,22 +444,40 @@ export default function PhotoBooth() {
                   </div>
                 </div>
                 
-                <div className="w-px h-24 bg-neutral-200 mx-4 hidden md:block" />
+                <div className="w-full md:w-px h-px md:h-24 bg-neutral-200 md:mx-4" />
 
-                <div className="space-y-4">
-                   <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <ChevronUp size={12} className="text-red-500" /> High Angle
-                  </label>
-                  <button 
-                    onClick={() => setHighAngle(!highAngle)}
-                    className={cn(
-                      "w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
-                      highAngle ? "bg-red-500 border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
-                    )}
-                  >
-                    <div className={cn("w-10 h-10 border-2 rounded rotate-45 mb-1", highAngle ? "border-white bg-red-400" : "border-neutral-100 bg-neutral-50")} />
-                    <span className="text-[8px] font-black uppercase">{highAngle ? 'ON' : 'OFF'}</span>
-                  </button>
+                <div className="flex gap-6 w-full md:w-auto">
+                  <div className="space-y-4 flex-1 md:flex-none">
+                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                      <ChevronUp size={12} className="text-red-500" /> High Angle
+                    </label>
+                    <button 
+                      onClick={() => setHighAngle(!highAngle)}
+                      className={cn(
+                        "w-full md:w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
+                        highAngle ? "bg-red-500 border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
+                      )}
+                    >
+                      <div className={cn("w-10 h-10 border-2 rounded rotate-45 mb-1", highAngle ? "border-white bg-red-400" : "border-neutral-100 bg-neutral-50")} />
+                      <span className="text-[8px] font-black uppercase">{highAngle ? 'ON' : 'OFF'}</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 flex-1 md:flex-none">
+                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                      <RefreshCw size={12} className="text-emerald-500" /> Device
+                    </label>
+                    <button 
+                      onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
+                      className={cn(
+                        "w-full md:w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
+                        facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-500"
+                      )}
+                    >
+                      <Camera size={20} className={cn(facingMode === 'environment' ? "text-white" : "text-neutral-200")} />
+                      <span className="text-[8px] font-black uppercase">{facingMode === 'user' ? 'FRONT' : 'BACK'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -582,7 +602,7 @@ export default function PhotoBooth() {
                   ))}
                 </div>
               </div>
-              <button onClick={() => setStep('setup')} className="mt-8 text-neutral-400 font-black flex items-center gap-2 uppercase tracking-widest text-[10px]">
+              <button onClick={() => { if(stream) stream.getTracks().forEach(t => t.stop()); setStep('setup'); }} className="mt-8 text-neutral-400 font-black flex items-center gap-2 uppercase tracking-widest text-[10px]">
                 <RefreshCw size={12} /> Reset
               </button>
            </div>
