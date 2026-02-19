@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap } from 'lucide-react';
+import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
@@ -24,6 +24,7 @@ interface PhotoSession {
   frames: string[];
   style: ShootingStyle;
   camera: CameraModel;
+  highAngle: boolean;
   timestamp: number;
   caption?: string;
   stripUrl?: string;
@@ -40,6 +41,7 @@ export default function PhotoBooth() {
   const [shootingStyle, setShootingStyle] = useState<ShootingStyle>('classic');
   const [cameraModel, setCameraModel] = useState<CameraModel>('600 Series');
   const [frameCount, setFrameCount] = useState<number>(4);
+  const [highAngle, setHighAngle] = useState<boolean>(false);
   const [caption, setCaption] = useState<string>('');
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
   const [sessions, setSessions] = useState<PhotoSession[]>([]);
@@ -103,27 +105,79 @@ export default function PhotoBooth() {
       canvas.width = 800;
       canvas.height = 600; 
       
-      ctx.save();
-      ctx.translate(800, 0);
-      ctx.scale(-1, 1);
-      
-      const videoRatio = video.videoWidth / video.videoHeight;
-      const targetRatio = 800 / 600;
-      
-      let sw, sh, sx, sy;
-      if (videoRatio > targetRatio) {
-        sh = video.videoHeight;
-        sw = video.videoHeight * targetRatio;
-        sx = (video.videoWidth - sw) / 2;
-        sy = 0;
+      // BACKGROUND DRAWING (FOR HIGH ANGLE)
+      if (highAngle) {
+        // Fill Red Background
+        ctx.fillStyle = '#b71c1c';
+        ctx.fillRect(0, 0, 800, 600);
+        
+        // Draw Radial Vignette
+        const grad = ctx.createRadialGradient(400, 300, 100, 400, 300, 500);
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 800, 600);
+        
+        // Draw Corner Shadows
+        const cornerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 300);
+        cornerGrad.addColorStop(0, 'rgba(0,0,0,0.7)');
+        cornerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = cornerGrad;
+        ctx.fillRect(0,0, 300, 300); // TL
+        
+        // Floor Diamond
+        ctx.save();
+        ctx.translate(400, 300);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = '#e64a4a';
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(-150, -150, 300, 300);
+        ctx.restore();
       } else {
-        sw = video.videoWidth;
-        sh = video.videoWidth / targetRatio;
-        sx = 0;
-        sy = (video.videoHeight - sh) / 2;
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 800, 600);
       }
-
-      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
+      
+      // VIDEO DRAWING
+      ctx.save();
+      
+      if (highAngle) {
+        // Mask to the floor diamond
+        ctx.beginPath();
+        ctx.translate(400, 300);
+        ctx.rotate(Math.PI / 4);
+        ctx.rect(-145, -145, 290, 290);
+        ctx.clip();
+        ctx.rotate(-Math.PI / 4);
+        ctx.translate(-400, -300);
+        
+        // Draw video centered on floor
+        ctx.translate(800, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 400-200, 300-200, 400, 400); 
+      } else {
+        ctx.translate(800, 0);
+        ctx.scale(-1, 1);
+        
+        const videoRatio = video.videoWidth / video.videoHeight;
+        const targetRatio = 800 / 600;
+        
+        let sw, sh, sx, sy;
+        if (videoRatio > targetRatio) {
+          sh = video.videoHeight;
+          sw = video.videoHeight * targetRatio;
+          sx = (video.videoWidth - sw) / 2;
+          sy = 0;
+        } else {
+          sw = video.videoWidth;
+          sh = video.videoWidth / targetRatio;
+          sx = 0;
+          sy = (video.videoHeight - sh) / 2;
+        }
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 800, 600);
+      }
+      
       ctx.restore();
       
       // APPLY PIXELS.JS FILTERS
@@ -133,24 +187,18 @@ export default function PhotoBooth() {
           console.log("Applying Pixels.js filter stack:", filters);
           
           let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          
           filters.forEach(filterName => {
             if (filterName !== 'none') {
               imageData = window.pixelsJS.filterImgData(imageData, filterName);
             }
           });
-          
           ctx.putImageData(imageData, 0, 0);
-          console.log("putImageData executed with filtered data");
-        } else {
-          console.error("CRITICAL: window.pixelsJS is UNDEFINED. Filter skipped.");
         }
       } catch (err) {
         console.error("Pixels.js error:", err);
       }
       
       const frameUrl = canvas.toDataURL('image/jpeg', 0.9);
-      console.log("Frame captured. URL Length:", frameUrl.length);
       setCapturedFrames(prev => {
         const next = [...prev, frameUrl];
         if (next.length === frameCount) {
@@ -167,8 +215,6 @@ export default function PhotoBooth() {
 
   const getPixelsFilters = (camera: CameraModel, style: ShootingStyle) => {
     const stack: string[] = [];
-
-    // 1. Hardware Sensor Base
     switch (camera) {
       case 'SX-70': stack.push('rosetint'); break;
       case '600 Series': stack.push('mellow'); break;
@@ -180,10 +226,7 @@ export default function PhotoBooth() {
       case 'Flip': stack.push('invert'); break;
       case 'I-2': stack.push('incbrightness'); break;
       case 'Impulse': stack.push('warmth'); break;
-      default: break;
     }
-
-    // 2. Style "Chemistry" Overlay
     switch (style) {
       case 'FQS': stack.push('sunset'); break;
       case 'OFM': stack.push('greyscale'); break;
@@ -192,9 +235,7 @@ export default function PhotoBooth() {
       case 'vivid': stack.push('eclectic'); break;
       case 'dreamy': stack.push('perfume'); break;
       case 'noir': stack.push('twenties'); break;
-      default: break;
     }
-
     return stack.length > 0 ? stack : ['none'];
   };
 
@@ -233,6 +274,7 @@ export default function PhotoBooth() {
             frames: frames,
             style: shootingStyle,
             camera: cameraModel,
+            highAngle: highAngle,
             timestamp: Date.now(),
             caption: caption,
             stripUrl: stripUrl
@@ -324,17 +366,37 @@ export default function PhotoBooth() {
           <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
             <div className="sketch-card p-6 md:p-10 border-4 border-black space-y-8 flex-1">
               
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Camera size={12} className="text-blue-500" /> Select Hardware
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {cameras.map(c => (
-                    <button key={c} onClick={() => setCameraModel(c)} className={cn(
-                      "py-2 rounded-lg border-2 transition-all text-[8px] font-black uppercase",
-                      cameraModel === c ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
-                    )}>{c}</button>
-                  ))}
+              <div className="flex justify-between items-center">
+                <div className="space-y-4 flex-1">
+                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                    <Camera size={12} className="text-blue-500" /> Select Hardware
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 pr-4">
+                    {cameras.map(c => (
+                      <button key={c} onClick={() => setCameraModel(c)} className={cn(
+                        "py-2 rounded-lg border-2 transition-all text-[8px] font-black uppercase",
+                        cameraModel === c ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
+                      )}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="w-px h-24 bg-neutral-200 mx-4 hidden md:block" />
+
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                    <ChevronUp size={12} className="text-red-500" /> High Angle
+                  </label>
+                  <button 
+                    onClick={() => setHighAngle(!highAngle)}
+                    className={cn(
+                      "w-20 h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center gap-1",
+                      highAngle ? "bg-red-500 border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
+                    )}
+                  >
+                    <div className={cn("w-10 h-10 border-2 rounded rotate-45 mb-1", highAngle ? "border-white bg-red-400" : "border-neutral-100 bg-neutral-50")} />
+                    <span className="text-[8px] font-black uppercase">{highAngle ? 'ON' : 'OFF'}</span>
+                  </button>
                 </div>
               </div>
 
@@ -383,7 +445,7 @@ export default function PhotoBooth() {
                   value={caption} 
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="Hand-write something..."
-                  className="w-full px-5 py-3 rounded-xl border-3 border-black bg-white text-sm font-bold outline-none"
+                  className="w-full px-5 py-3 rounded-xl border-3 border-black bg-white text-sm font-bold outline-none text-black"
                 />
               </div>
             </div>
@@ -404,13 +466,28 @@ export default function PhotoBooth() {
                    <div className="w-10 h-10 bg-neutral-800 rounded-xl border-4 border-black flex items-center justify-center">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
                    </div>
-                   <div className="text-[10px] font-black uppercase text-neutral-400 mt-2">{cameraModel}</div>
+                   <div className="text-[10px] font-black uppercase text-neutral-400 mt-2">{cameraModel} {highAngle && '• HIGH ANGLE'}</div>
                    <div className="w-8 h-16 rainbow-stripe" />
                 </div>
 
-                <div className="relative w-full aspect-square rounded-full bg-black border-4 md:border-8 border-black shadow-2xl overflow-hidden ring-8 md:ring-12 ring-white/50">
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1] opacity-80 mix-blend-screen" />
-                  {isFlashing && <div className="absolute inset-0 bg-white z-50" />}
+                <div className={cn(
+                  "relative w-full aspect-square rounded-full border-4 md:border-8 border-black shadow-2xl overflow-hidden ring-8 md:ring-12 ring-white/50",
+                  highAngle ? "red-cube-bg" : "bg-black"
+                )}>
+                  {highAngle && <div className="red-cube-floor" />}
+                  <div className={cn("w-full h-full", highAngle && "red-cube-content")}>
+                     <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      className={cn(
+                        "object-cover scale-x-[-1] opacity-90 mix-blend-screen",
+                        highAngle ? "w-[45%] h-[45%] rotate-45" : "w-full h-full"
+                      )} 
+                     />
+                  </div>
+                  {isFlashing && <div className="absolute inset-0 bg-white z-50 camera-flash" />}
                   {isCountingDown && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-40 backdrop-blur-[2px]">
                       <span className="text-white text-8xl md:text-[12rem] font-black italic">{countdown}</span>
@@ -433,7 +510,7 @@ export default function PhotoBooth() {
 
                 <div className="absolute -right-8 md:-right-16 top-1/4 flex flex-col gap-2 md:gap-3 scale-75 md:scale-100">
                   {Array.from({ length: frameCount }).map((_, i) => (
-                    <div key={i} className="w-12 h-10 md:w-20 md:h-16 bg-white p-0.5 md:p-1 shadow-md rounded-sm border border-black rotate-[-2deg] odd:rotate-[2deg]">
+                    <div key={i} className="w-12 h-10 md:w-20 md:h-16 bg-white p-0.5 md:p-1 shadow-md rounded-sm border border-black rotate-[-2deg] odd:rotate-[2deg] overflow-hidden">
                       {capturedFrames[i] ? <img src={capturedFrames[i]} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-neutral-50 flex items-center justify-center text-[8px] font-black text-neutral-200">{i + 1}</div>}
                     </div>
                   ))}
@@ -465,7 +542,7 @@ export default function PhotoBooth() {
                     ))}
                     <div className="py-4 text-center border-t-3 border-black mt-3">
                        <p className="text-xs font-black text-neutral-800 italic uppercase">
-                          {session.caption || `NOVA BOOTH // ${session.camera} // ${session.style}`}
+                          {session.caption || `NOVA BOOTH // ${session.camera} // ${session.style} ${session.highAngle ? '// HIGH ANGLE' : ''}`}
                        </p>
                     </div>
                  </div>
