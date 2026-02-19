@@ -57,11 +57,18 @@ export default function PhotoBooth() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const backplateRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 1024);
     checkIsDesktop();
     window.addEventListener('resize', checkIsDesktop);
+
+    // Preload Backplate
+    const img = new Image();
+    img.src = '/2026-02-19-red-cube-clean-720p.png';
+    backplateRef.current = img;
+
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
 
@@ -163,73 +170,23 @@ export default function PhotoBooth() {
       // 3. COMPOSE FINAL CANVAS
       ctx.clearRect(0, 0, 800, 600);
 
-      if (highAngle) {
-        // --- RED CUBE V2 ARCHITECTURE ---
-        // Base
-        ctx.fillStyle = '#b71c1c';
-        ctx.fillRect(0, 0, 800, 600);
+      if (highAngle && backplateRef.current) {
+        // Draw the Generated Red Cube Backplate
+        ctx.drawImage(backplateRef.current, 0, 0, 800, 600);
 
-        // Perspective Walls
-        // Top Wall
-        ctx.fillStyle = '#8e0000';
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(800, 0);
-        ctx.lineTo(600, 200);
-        ctx.lineTo(200, 200);
-        ctx.fill();
-
-        // Bottom Wall
-        ctx.fillStyle = '#d32f2f';
-        ctx.beginPath();
-        ctx.moveTo(0, 600);
-        ctx.lineTo(800, 600);
-        ctx.lineTo(600, 400);
-        ctx.lineTo(200, 400);
-        ctx.fill();
-
-        // Left Wall
-        ctx.fillStyle = '#7f0000';
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, 600);
-        ctx.lineTo(200, 400);
-        ctx.lineTo(200, 200);
-        ctx.fill();
-
-        // Right Wall
-        ctx.fillStyle = '#c62828';
-        ctx.beginPath();
-        ctx.moveTo(800, 0);
-        ctx.lineTo(800, 600);
-        ctx.lineTo(600, 400);
-        ctx.lineTo(600, 200);
-        ctx.fill();
-
-        // Floor
-        ctx.fillStyle = '#e64a4a';
-        ctx.fillRect(200, 200, 400, 200);
-
-        // Lighting Overlays
-        const grad = ctx.createRadialGradient(400, 300, 50, 400, 300, 500);
-        grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.7)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 800, 600);
-
-        // Corner Shadow (Top Left)
-        const tl = ctx.createRadialGradient(0, 0, 0, 0, 0, 300);
-        tl.addColorStop(0, 'rgba(0,0,0,0.8)');
-        tl.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = tl;
-        ctx.fillRect(0, 0, 400, 300);
-
-        // Draw Person (Clipped to Floor)
+        // Draw Person keyed onto the center
+        // Center area in V11 is roughly 300x300 at center
         ctx.save();
         ctx.beginPath();
-        ctx.rect(205, 205, 390, 190); // Slight inset for floor padding
+        // Geometry for the diamond floor area mask
+        ctx.moveTo(400, 200);
+        ctx.lineTo(600, 300);
+        ctx.lineTo(400, 400);
+        ctx.lineTo(200, 300);
+        ctx.closePath();
         ctx.clip();
-        ctx.drawImage(finalFrameSource as any, 200, 200, 400, 200);
+        
+        ctx.drawImage(finalFrameSource as any, 200, 150, 400, 300);
         ctx.restore();
       } else {
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
