@@ -620,7 +620,7 @@ export default function PhotoBooth() {
                <div key={session.id} className="flex flex-col items-center gap-6 w-full max-w-sm">
                  <div className="photobooth-strip w-full p-4 bg-white border-4 border-black shadow-2xl">
                     {session.frames.map((frame, i) => (
-                      <div key={i} className="strip-photo mb-3 last:mb-0 bg-neutral-900 border-2 border-black overflow-hidden flex items-center justify-center">
+                      <div key={i} className="strip-photo mb-3 last:mb-0 bg-neutral-900 border-2 border-black overflow-hidden flex items-center justify-center min-h-[400px]">
                         <img src={frame} className="w-full h-auto object-contain" />
                       </div>
                     ))}
