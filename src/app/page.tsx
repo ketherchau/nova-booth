@@ -193,10 +193,10 @@ export default function PhotoBooth() {
         // Draw Person on top of the background (NO CLIPPING, scale properly)
         // Center of the diamond in V11 is roughly at (400, 300)
         // We'll scale the person to occupy a significant portion of the screen
-        const personWidth = 500; // Reduced from 600 to fit full head/body
-        const personHeight = 375; // Maintain 4:3 aspect ratio
+        const personWidth = 320; // Reduced to 320px for full body visibility
+        const personHeight = 240; // Maintain 4:3 aspect ratio
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2 + 30; // Centered vertically on the floor
+        const py = (600 - personHeight) / 2 + 20; // Centered on the floor area
 
         ctx.save();
         // Removed ctx.clip() to prevent hair/body cut-off
