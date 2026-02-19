@@ -214,7 +214,7 @@ export default function PhotoBooth() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(activeBP, 0, 0);
 
-        const personWidth = canvas.width * 0.75; // Scaled up to 0.75
+        const personWidth = canvas.width * 0.9; // Scaled up even more from 0.75
         const personHeight = personWidth * (600 / 800);
         const px = (canvas.width - personWidth) / 2;
         const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.05); 
@@ -592,7 +592,10 @@ export default function PhotoBooth() {
                <div key={session.id} className="flex flex-col items-center gap-6 w-full max-w-sm">
                  <div className="photobooth-strip w-full bg-white">
                     {session.frames.map((frame, i) => (
-                      <div key={i} className="strip-photo flex items-center justify-center min-h-[400px]">
+                      <div key={i} className={cn(
+                        "strip-photo flex items-center justify-center",
+                        session.highAngle ? "min-h-[400px]" : "aspect-[4/3]"
+                      )}>
                         <img src={frame} className="w-full h-auto" />
                       </div>
                     ))}
