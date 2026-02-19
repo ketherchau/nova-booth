@@ -49,6 +49,7 @@ export default function PhotoBooth() {
   const [highAngle, setHighAngle] = useState<boolean>(false);
   const [highAngleBG, setHighAngleBG] = useState<HighAngleBG>('red-cube');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [caption, setCaption] = useState<string>('');
   const [capturedFrames, setCapturedFrames] = useState<string[]>([]);
   const [sessions, setSessions] = useState<PhotoSession[]>([]);
@@ -87,11 +88,29 @@ export default function PhotoBooth() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      
       const constraints = {
-        video: { facingMode: facingMode, width: { ideal: 1080 }, height: { ideal: 1080 } },
+        video: { 
+          facingMode: facingMode,
+          width: { ideal: 1080 }, 
+          height: { ideal: 1080 } 
+        },
         audio: false
       };
+      
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // APPLY ZOOM IF SUPPORTED
+      const track = newStream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+      if (capabilities.zoom) {
+        try {
+          await (track as any).applyConstraints({ advanced: [{ zoom: zoomLevel }] });
+        } catch (e) {
+          console.warn("Zoom not supported by browser/hardware constraints:", e);
+        }
+      }
+
       setStream(newStream);
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
@@ -102,7 +121,7 @@ export default function PhotoBooth() {
       console.error("Camera error:", err);
       setError(`Camera access denied: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, [facingMode]);
+  }, [facingMode, zoomLevel]);
 
   useEffect(() => {
     if (step === 'shooting') {
@@ -195,10 +214,10 @@ export default function PhotoBooth() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(activeBP, 0, 0);
 
-        const personWidth = canvas.width * 0.6;
+        const personWidth = canvas.width * 0.75; // Scaled up to 0.75
         const personHeight = personWidth * (600 / 800);
         const px = (canvas.width - personWidth) / 2;
-        const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.03); 
+        const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.05); 
 
         ctx.save();
         const maskCanvas = document.createElement('canvas');
@@ -435,12 +454,22 @@ export default function PhotoBooth() {
                     <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                       <RefreshCw size={12} className="text-emerald-500" /> Camera
                     </label>
-                    <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className={cn(
-                      "w-full h-16 rounded border-4 transition-all flex flex-col items-center justify-center",
-                      facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-500"
-                    )}>
-                      <span className="text-[10px] font-black uppercase">{facingMode === 'user' ? 'FRONT' : 'BACK'}</span>
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className={cn(
+                        "w-full h-12 rounded border-4 transition-all flex flex-col items-center justify-center",
+                        facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
+                      )}>
+                        <span className="text-[8px] font-black uppercase">{facingMode === 'user' ? 'FRONT' : 'BACK'}</span>
+                      </button>
+                      <div className="flex gap-2">
+                        {[0.5, 1].map(z => (
+                          <button key={z} onClick={() => setZoomLevel(z)} className={cn(
+                            "flex-1 h-8 rounded border-2 text-[8px] font-black transition-all",
+                            zoomLevel === z ? "bg-emerald-500 border-black text-white" : "bg-white border-neutral-100 text-neutral-300"
+                          )}>{z}X</button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -473,7 +502,7 @@ export default function PhotoBooth() {
                     return (
                       <button key={s} onClick={() => setShootingStyle(s)} className={cn(
                         "flex flex-col items-center gap-1 py-3 rounded border-2 transition-all",
-                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
+                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[2px_2px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
                       )}>
                         <Icon size={14} />
                         <span className="text-[8px] font-black uppercase">{s}</span>
@@ -507,6 +536,7 @@ export default function PhotoBooth() {
         </div>
       )}
 
+      {/* --- SHOOTING --- */}
       {step === 'shooting' && (
         <div className="flex-1 flex flex-col p-4 animate-in zoom-in duration-300">
            <div className="flex-1 flex flex-col items-center justify-center max-w-[450px] mx-auto w-full">
@@ -549,6 +579,7 @@ export default function PhotoBooth() {
         </div>
       )}
 
+      {/* --- LAB --- */}
       {step === 'lab' && (
         <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-500 touch-pan-y">
           <header className="text-center py-6">
