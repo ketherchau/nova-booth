@@ -211,12 +211,33 @@ export default function PhotoBooth() {
         const personWidth = 500; // Upgraded to 500px
         const personHeight = 375; // Maintain 4:3 aspect ratio
         const px = (800 - personWidth) / 2;
-        const py = (600 - personHeight) / 2; // Refined to +0px offset
+        const py = (600 - personHeight) / 2 - 10; // Refined to -10px offset
 
         ctx.save();
-        // RESCALE: Instead of drawing the full capture scaled down, 
-        // we scale the context to ensure the whole 800x600 buffer fits within the 500x375 area
-        ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
+        
+        // ADD SECONDARY MASKING FOR STRAY FLOOR PIXELS
+        // We use a gradient to softly fade the bottom 10% of the people capture
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = personWidth;
+        maskCanvas.height = personHeight;
+        const maskCtx = maskCanvas.getContext('2d');
+        if (maskCtx) {
+          maskCtx.drawImage(finalFrameSource as any, 0, 0, personWidth, personHeight);
+          
+          // Apply a "cleanup" mask to the bottom edge
+          maskCtx.globalCompositeOperation = 'destination-in';
+          const bottomFade = maskCtx.createLinearGradient(0, 0, 0, personHeight);
+          bottomFade.addColorStop(0, 'rgba(0,0,0,1)');
+          bottomFade.addColorStop(0.9, 'rgba(0,0,0,1)'); // Start fading at 90%
+          bottomFade.addColorStop(1, 'rgba(0,0,0,0)'); // Fade to zero at the very bottom
+          maskCtx.fillStyle = bottomFade;
+          maskCtx.fillRect(0, 0, personWidth, personHeight);
+          
+          ctx.drawImage(maskCanvas, px, py);
+        } else {
+          ctx.drawImage(finalFrameSource as any, px, py, personWidth, personHeight);
+        }
+        
         ctx.restore();
       } else {
         ctx.drawImage(finalFrameSource as any, 0, 0, 800, 600);
