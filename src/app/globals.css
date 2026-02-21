@@ -8,11 +8,11 @@
 :root {
   --background: #f4e4bc; /* Vintage Paper */
   --foreground: #2d2d2d;
-  --booth-wood: #2a1b12;
-  --booth-gold: #d4af37;
-  --sketch-border: #1a1a1a;
-  --curtain-red: #8b1e1e;
-  --panel-green: #b2c9b2;
+  --booth-black: #0c0c0c;
+  --booth-gold: #c7a86b;
+  --panel-mint: #d6e3db;
+  --curtain-red: #c23e33;
+  --paper-cream: #f7efe0;
 }
 
 body {
@@ -20,203 +20,208 @@ body {
   color: var(--foreground);
   font-family: 'Courier New', Courier, monospace;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 30px 30px;
   -webkit-tap-highlight-color: transparent;
   touch-action: pan-y;
   overscroll-behavior-y: none;
 }
 
-/* Redesigned Photobooth UI */
-.photobooth-exterior {
+/* --- Realistic Vintage Booth UI --- */
+
+.booth-container {
   width: 100%;
-  max-width: 450px;
+  max-width: 500px;
   margin: 0 auto;
-  border: 10px solid #1a1a1a;
-  background: #f0f0f0;
-  display: flex;
-  flex-direction: column;
+  background: #111;
   position: relative;
-  box-shadow: 20px 20px 0px rgba(0,0,0,0.1);
+  border: 2px solid #000;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
 
-.photobooth-sign {
-  background: #000;
-  color: #fff;
-  padding: 20px;
-  text-align: center;
-  border-bottom: 8px solid #1a1a1a;
-  font-family: "Brush Script MT", cursive;
-  font-size: 3.5rem;
-  letter-spacing: 2px;
+.booth-frame-outer {
+  background: var(--booth-black);
+  padding: 8px;
   position: relative;
 }
 
-.photobooth-sign::after {
+.booth-frame-inner {
+  border: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+}
+
+.booth-gold-trim {
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--booth-gold);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.booth-panel-mint {
+  background-color: var(--panel-mint);
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(0,0,0,0.02), transparent 15%),
+    linear-gradient(180deg, rgba(0,0,0,0.05), transparent);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.2), inset 0 -4px 8px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+/* Metal texture overlay */
+.booth-panel-mint::before {
   content: "";
   position: absolute;
-  top: 5px;
-  left: 5px;
-  right: 5px;
-  bottom: 5px;
-  border: 2px solid #d4af37;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w4.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: multiply;
   pointer-events: none;
 }
 
-.photobooth-main-section {
-  display: flex;
-  border-bottom: 8px solid #1a1a1a;
-}
-
-.photobooth-left-panel {
-  width: 120px;
-  border-right: 8px solid #1a1a1a;
-  background: #e0e0e0;
-  display: flex;
-  flex-direction: column;
-}
-
-.photobooth-price-tag {
-  padding: 15px 5px;
+.booth-sign-main {
+  background: #000;
+  color: #f7e8d0;
+  padding: 24px 10px;
   text-align: center;
-  border-bottom: 6px solid #1a1a1a;
-  background: #fff;
+  border: 4px solid #111;
+  font-family: "Brush Script MT", cursive;
+  font-size: 3.2rem;
+  position: relative;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-.photobooth-price-tag .number {
-  font-size: 2.5rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.photobooth-price-tag .details {
-  font-size: 0.8rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.photobooth-entrance {
-  flex: 1;
-  background: var(--curtain-red);
+.booth-curtain-container {
+  background: #1a0505;
+  height: 320px;
   position: relative;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  min-height: 300px;
+  box-shadow: inset 0 20px 40px rgba(0,0,0,0.6);
 }
 
-.photobooth-curtain {
+.booth-curtain-fabric {
   width: 100%;
   height: 100%;
-  background-image: repeating-linear-gradient(
-    to right,
-    transparent,
-    transparent 20px,
-    rgba(0,0,0,0.1) 20px,
-    rgba(0,0,0,0.1) 40px
-  );
-  box-shadow: inset 0 20px 40px rgba(0,0,0,0.3);
+  background-color: var(--curtain-red);
+  background-image: 
+    repeating-linear-gradient(90deg, 
+      rgba(0,0,0,0.2) 0px, 
+      rgba(0,0,0,0.2) 20px, 
+      rgba(0,0,0,0) 20px, 
+      rgba(0,0,0,0) 40px
+    ),
+    linear-gradient(to right, rgba(0,0,0,0.1), transparent, rgba(0,0,0,0.1));
+  box-shadow: inset 0 10px 30px rgba(0,0,0,0.3);
 }
 
-.photobooth-right-panel {
-  width: 100px;
-  border-left: 8px solid #1a1a1a;
-  background: #e0e0e0;
-  display: flex;
-  flex-direction: column;
+.booth-paper-sign {
+  background: var(--paper-cream);
+  border: 1px solid #999;
   padding: 10px;
-  text-align: center;
-  font-weight: 900;
-  text-transform: uppercase;
-  font-size: 1.2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  font-family: "Times New Roman", serif;
 }
 
-.photobooth-bottom-section {
-  display: flex;
-  height: 250px;
-}
-
-.photobooth-bottom-left {
-  flex: 1;
-  background: var(--panel-green);
-  border-right: 8px solid #1a1a1a;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.photobooth-flash-box {
-  width: 100px;
-  height: 100px;
-  border: 4px solid #1a1a1a;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.photobooth-bottom-right {
-  width: 150px;
-  background: var(--panel-green);
+.booth-metal-plate {
+  background: linear-gradient(90deg, #999 0%, #ccc 50%, #999 100%);
+  border: 1px solid #666;
   position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
 }
 
-.photobooth-stool {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 10px;
-  background: #1a1a1a;
-}
-
-.photobooth-stool::after {
-  content: "";
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+.booth-screw {
   width: 6px;
-  height: 100px;
-  background: #1a1a1a;
-}
-
-.photobooth-start-btn {
+  height: 6px;
+  background: radial-gradient(circle, #666 0%, #222 100%);
+  border-radius: 50%;
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
 }
 
-/* Control Panel styles for shooting page */
-.controls-overlay {
-  background: rgba(255, 255, 255, 0.9);
-  border-top: 4px solid #1a1a1a;
-  padding: 10px;
-  font-size: 0.7rem;
+/* --- Shooting Page Layout --- */
+
+.interior-view {
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.control-group-label {
+.live-feed-window {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #000;
+  position: relative;
+  border-bottom: 6px solid #111;
+}
+
+.control-bar-horizontal {
+  background: #1a1a1a;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.horizontal-scroller {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.horizontal-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.pill-button {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 2px solid #333;
+  background: #222;
+  color: #eee;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  color: #666;
-  margin-bottom: 4px;
+  transition: all 0.2s;
 }
 
-/* Original styles for compatibility */
-.vbooth-frame {
-  background: var(--booth-wood);
-  border: 6px solid var(--sketch-border);
+.pill-button.active {
+  background: var(--booth-gold);
+  border-color: #fff;
+  color: #000;
+}
+
+.shooting-footer {
+  padding: 20px;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   position: relative;
-  box-shadow: 12px 12px 0px rgba(0,0,0,0.2);
+}
+
+.shutter-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #c23e33;
+  border: 6px solid #111;
+  box-shadow: 0 0 0 4px #c23e33, 0 4px 10px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.shutter-btn:active {
+  transform: scale(0.92);
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 .vbooth-marquee {
