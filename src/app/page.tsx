@@ -39,6 +39,7 @@ export default function PhotoBooth() {
   const [isCountingDown, setIsCountingDown] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const livePreviewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -156,6 +157,87 @@ export default function PhotoBooth() {
     shoot(0);
   };
 
+  const generateStrip = async (session: PhotoSession, design: FrameDesign): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve("");
+
+      const fw = 800;
+      const fh = 800; // Fixed square for modern feel, or 4/3 as used in shooting
+      const padding = 60;
+      const gap = 30;
+
+      // Calculate canvas size based on design
+      if (design === 'classic-strip') {
+        canvas.width = fw + (padding * 2);
+        canvas.height = (fh * session.frames.length) + (gap * (session.frames.length - 1)) + (padding * 2);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (design === 'polaroid') {
+        canvas.width = fw + (padding * 2);
+        canvas.height = (fh * session.frames.length) + (gap * (session.frames.length - 1)) + (padding * 2) + 120; // extra bottom tab
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        // Default generic strip
+        canvas.width = fw + (padding * 2);
+        canvas.height = (fh * session.frames.length) + (gap * (session.frames.length - 1)) + (padding * 2);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      let loaded = 0;
+      session.frames.forEach((src, i) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const y = padding + (i * (fh + gap));
+          ctx.drawImage(img, padding, y, fw, fh);
+          loaded++;
+          if (loaded === session.frames.length) {
+             resolve(canvas.toDataURL('image/jpeg', 0.9));
+          }
+        };
+        img.src = src;
+      });
+    });
+  };
+
+  const handleSave = async (session: PhotoSession) => {
+    setIsGenerating(true);
+    try {
+      const stripUrl = await generateStrip(session, frameDesign);
+      const l = document.createElement('a');
+      l.href = stripUrl;
+      l.download = `nova-booth-${session.id}.jpg`;
+      document.body.appendChild(l);
+      l.click();
+      document.body.removeChild(l);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleShare = async (session: PhotoSession) => {
+    setIsGenerating(true);
+    try {
+      const stripUrl = await generateStrip(session, frameDesign);
+      const r = await fetch(stripUrl);
+      const b = await r.blob();
+      const f = new File([b], `nova-booth-${session.id}.jpg`, { type: 'image/jpeg' });
+      if (navigator.share) {
+        await navigator.share({ files: [f], title: 'Nova Booth' });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const cameras: CameraModel[] = ['Normal', 'SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
   const styles: ShootingStyle[] = ['standard', 'classic', 'FQS', 'OFM', 'retro-grain', 'cyberpunk', 'vivid', 'dreamy', 'noir'];
   const designs: {id: FrameDesign, icon: any}[] = [
@@ -174,8 +256,8 @@ export default function PhotoBooth() {
                 <div className="booth-sign-main">Photographs</div>
                 <div className="flex flex-1 border-t-8 border-[#0c0c0c] rounded-b-[30px] overflow-hidden">
                   <div className="w-20 border-r-8 border-[#0c0c0c] flex flex-col">
-                    <div className="booth-paper-sign text-center border-b-4 border-[#0c0c0c] py-6">
-                      <div className="text-xl font-black italic font-serif">4 For FREE</div>
+                    <div className="booth-paper-sign text-center border-b-4 border-[#0c0c0c] py-4">
+                      <div className="text-lg font-black italic font-serif">4 For FREE</div>
                     </div>
                     <div className="flex-1 p-2 bg-[#d6ded9] flex flex-col gap-1 opacity-20">
                       {[1,2,3,4].map(i => <div key={i} className="w-full aspect-[3/4] bg-neutral-800" />)}
@@ -270,19 +352,22 @@ export default function PhotoBooth() {
                   frameDesign === 'comic' && "bg-yellow-400 p-4 border-4 border-black flex flex-col gap-4 shadow-[8px_8px_0px_black]"
                 )}>
                   {s.frames.map((f, i) => (
-                    <div key={i} className={cn("w-full overflow-hidden", 
+                    <div key={i} className={cn("w-full overflow-hidden aspect-[4/3] bg-zinc-900", 
                       frameDesign === 'polaroid' && "aspect-square",
                       frameDesign === 'instagram' && "aspect-square rounded-sm",
-                      frameDesign === 'comic' && "border-2 border-black rotate-1",
-                      "aspect-[4/3] bg-zinc-900"
+                      frameDesign === 'comic' && "border-2 border-black rotate-1"
                     )}><img src={f} className="w-full h-full object-cover" /></div>
                   ))}
                   {frameDesign === 'instagram' && <div className="flex gap-3 px-1"><Heart size={16} /><Star size={16} /></div>}
                   {frameDesign === 'wedding' && <div className="text-center italic font-serif text-sm border-t pt-4">Together Forever</div>}
                 </div>
                 <div className="flex gap-4">
-                  <button onClick={() => {const l=document.createElement('a');l.href=s.frames[0];l.download='strip.jpg';l.click();}} className="hidden md:flex bg-white p-4 rounded-full shadow-lg border-2 border-black"><Download size={20} /></button>
-                  <button onClick={async () => {const r=await fetch(s.frames[0]);const b=await r.blob();const f=new File([b],'strip.jpg',{type:'image/jpeg'});navigator.share?.({files:[f]});}} className="bg-white p-4 rounded-full shadow-lg border-2 border-black"><Share2 size={20} /></button>
+                  <button onClick={() => handleSave(s)} className="hidden md:flex bg-white p-4 rounded-full shadow-lg border-2 border-black disabled:opacity-50" disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
+                  </button>
+                  <button onClick={() => handleShare(s)} className="bg-white p-4 rounded-full shadow-lg border-2 border-black disabled:opacity-50" disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Share2 size={20} />}
+                  </button>
                   <button onClick={() => setSessions(prev => prev.filter(x => x.id !== s.id))} className="bg-white p-4 rounded-full shadow-lg border-2 border-black text-red-500"><Trash2 size={20} /></button>
                 </div>
               </div>
