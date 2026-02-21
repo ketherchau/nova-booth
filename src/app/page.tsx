@@ -238,11 +238,11 @@ export default function PhotoBooth() {
               <div className="booth-frame-inner">
                 <div className="booth-sign-main">Photographs</div>
                 
-                <div className="flex flex-1 border-t-8 border-[#0c0c0c]">
+                <div className="flex flex-1 border-t-8 border-[#0c0c0c] rounded-b-[30px] overflow-hidden">
                   <div className="w-20 border-r-8 border-[#0c0c0c] flex flex-col">
                     <div className="booth-paper-sign text-center border-b-4 border-[#0c0c0c] py-4">
-                      <div className="text-3xl font-black">3</div>
-                      <div className="text-[7px] font-black uppercase">for $1.50</div>
+                      <div className="text-3xl font-black italic">FREE</div>
+                      <div className="text-[7px] font-black uppercase">Photographs</div>
                     </div>
                     <div className="flex-1 p-2 bg-[#d6ded9] flex flex-col gap-1 opacity-20">
                        {Array.from({length: 4}).map((_, i) => (
@@ -267,19 +267,6 @@ export default function PhotoBooth() {
                     <div>W<br/>A<br/>I<br/>T</div>
                   </div>
                 </div>
-
-                <div className="flex h-32 border-t-8 border-[#0c0c0c] booth-panel-mint">
-                  <div className="flex-1 flex items-center justify-center border-r-8 border-[#0c0c0c]">
-                    <div className="booth-metal-plate w-16 h-20 rounded-lg flex flex-col items-center justify-center text-[5px] font-black uppercase text-red-600">
-                       <div className="mb-1 text-xs text-black">FLASH</div>
-                       <Zap size={14} className="text-black" />
-                    </div>
-                  </div>
-                  <div className="w-24 relative">
-                    <div className="absolute bottom-4 right-8 w-1 h-16 bg-black/80" />
-                    <div className="absolute bottom-20 right-4 w-8 h-1.5 bg-black/80 rounded-full" />
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -300,8 +287,26 @@ export default function PhotoBooth() {
                 </div>
               )}
               <div className="absolute top-0 left-0 right-0 p-4 safe-top flex justify-between items-center pointer-events-none">
-                 <div className="bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-black uppercase tracking-widest border border-white/20">
-                   {capturedFrames.length < frameCount ? `SHOT ${capturedFrames.length + 1} / ${frameCount}` : 'COMPLETE'}
+                 <div className="flex items-center gap-2 pointer-events-auto">
+                    <div className="bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-black uppercase tracking-widest border border-white/20">
+                      {capturedFrames.length < frameCount ? `SHOT ${capturedFrames.length + 1} / ${frameCount}` : 'COMPLETE'}
+                    </div>
+                    {capturedFrames.length === 0 && !isCountingDown && (
+                      <div className="flex bg-black/50 backdrop-blur-md rounded-full border border-white/20 p-1">
+                        {[1, 2, 3, 4].map(n => (
+                          <button 
+                            key={n} 
+                            onClick={() => setFrameCount(n)}
+                            className={cn(
+                              "w-6 h-6 rounded-full text-[10px] font-black transition-all",
+                              frameCount === n ? "bg-white text-black" : "text-white/50"
+                            )}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                  </div>
                  <button onClick={() => setStep('setup')} className="p-2 bg-black/50 rounded-full text-white pointer-events-auto border border-white/20">
                    <X size={20} />
@@ -331,7 +336,7 @@ export default function PhotoBooth() {
            <div className="shooting-footer safe-bottom">
               <div className="flex-1 flex justify-center"><button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className="p-4 text-white/60"><RefreshCw size={24} /></button></div>
               <div className="flex-1 flex justify-center"><button onClick={runCaptureSequence} disabled={isCountingDown || capturedFrames.length >= frameCount} className="shutter-btn" /></div>
-              <div className="flex-1 flex justify-center"><button onClick={() => setHighAngle(!highAngle)} className={cn("p-4 transition-colors", highAngle ? "text-red-500" : "text-white/60")}><ChevronUp size={24} /></button></div>
+              <div className="flex-1 flex justify-center"></div>
            </div>
         </div>
       )}
