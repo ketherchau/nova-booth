@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, ArrowRight, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Camera, RefreshCw, Download, Trash2, Share2, Layers, Grid, Sparkles, Ghost, Palette, Sun, Moon, Zap, ChevronUp, Loader2, Image as ImageIcon, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { removeBackground } from '@imgly/background-removal';
@@ -55,6 +55,7 @@ export default function PhotoBooth() {
   const [sessions, setSessions] = useState<PhotoSession[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
@@ -100,7 +101,6 @@ export default function PhotoBooth() {
       
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      // APPLY ZOOM IF SUPPORTED
       const track = newStream.getVideoTracks()[0];
       const capabilities = track.getCapabilities() as any;
       if (capabilities.zoom) {
@@ -214,7 +214,7 @@ export default function PhotoBooth() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(activeBP, 0, 0);
 
-        const personWidth = canvas.width * 0.9; // Scaled up even more from 0.75
+        const personWidth = canvas.width * 0.9;
         const personHeight = personWidth * (600 / 800);
         const px = (canvas.width - personWidth) / 2;
         const py = (canvas.height - personHeight) / 2 - (canvas.height * 0.05); 
@@ -415,171 +415,183 @@ export default function PhotoBooth() {
     <div className="fixed inset-0 bg-[#f4e4bc] flex flex-col overflow-hidden safe-top safe-bottom touch-none">
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* --- REDESIGNED SETUP (EXTERIOR) --- */}
       {step === 'setup' && (
-        <div className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto overscroll-contain animate-in fade-in duration-500 touch-pan-y">
-          <div className="max-w-2xl mx-auto w-full space-y-8">
-            <div className="vbooth-frame p-1 mt-4">
-              <div className="vbooth-marquee">PHOTOS</div>
+        <div className="flex-1 flex flex-col items-center justify-center p-4 animate-in fade-in duration-500 overflow-y-auto">
+          <div className="photobooth-exterior">
+            <div className="photobooth-sign">
+              Photographs
+            </div>
+            
+            <div className="photobooth-main-section">
+              <div className="photobooth-left-panel">
+                <div className="photobooth-price-tag">
+                  <div className="number">3</div>
+                  <div className="details">for $1.50</div>
+                </div>
+                <div className="flex-1 border-b-8 border-black p-2 flex flex-col gap-1 overflow-hidden opacity-50">
+                  {Array.from({length: 8}).map((_, i) => (
+                    <div key={i} className="w-full aspect-[3/4] border-2 border-black bg-white" />
+                  ))}
+                </div>
+              </div>
+
+              <div className="photobooth-entrance">
+                <div className="photobooth-curtain" />
+                <button 
+                  onClick={() => setStep('shooting')}
+                  className="photobooth-start-btn bg-white text-black font-black px-8 py-4 border-4 border-black shadow-[6px_6px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase italic tracking-tighter text-xl"
+                >
+                  Step Inside
+                </button>
+              </div>
+
+              <div className="photobooth-right-panel">
+                <div className="mt-4">W<br/>H<br/>I<br/>L<br/>E</div>
+                <div className="text-4xl my-4">U</div>
+                <div>W<br/>A<br/>I<br/>T</div>
+              </div>
             </div>
 
-            <div className="sketch-card p-6 md:p-8 space-y-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="space-y-4 flex-1 w-full">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <Camera size={12} className="text-blue-500" /> Hardware
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {cameras.map(c => (
-                      <button key={c} onClick={() => setCameraModel(c)} className={cn(
-                        "py-2 rounded border-2 transition-all text-[8px] font-black uppercase",
-                        cameraModel === c ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
-                      )}>{c}</button>
-                    ))}
-                  </div>
+            <div className="photobooth-bottom-section">
+              <div className="photobooth-bottom-left">
+                <div className="photobooth-flash-box">
+                  <div className="mb-1 text-red-500">READY</div>
+                  <div className="mb-1 text-red-500">TO</div>
+                  <div className="text-xl">FLASH</div>
+                  <Zap size={20} className="mt-1" />
                 </div>
+              </div>
+              <div className="photobooth-bottom-right">
+                <div className="photobooth-stool" />
+              </div>
+            </div>
+          </div>
+          
+          <p className="mt-8 text-[10px] font-black uppercase tracking-widest text-neutral-500">
+            Nova Interactive AI Photobooth // Ver 2.0
+          </p>
+        </div>
+      )}
+
+      {/* --- SHOOTING (INTERIOR) --- */}
+      {step === 'shooting' && (
+        <div className="flex-1 flex flex-col animate-in zoom-in duration-300">
+           {/* Top Info Bar */}
+           <div className="bg-black text-white p-2 px-4 flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-tighter">
+                {capturedFrames.length < frameCount ? `FRAME ${capturedFrames.length + 1} / ${frameCount}` : 'ALL FRAMES CAPTURED'}
+              </span>
+              <button onClick={() => setShowSettings(!showSettings)} className="text-white hover:text-blue-400 transition-colors">
+                <Settings2 size={18} />
+              </button>
+           </div>
+
+           <div className="flex-1 relative flex flex-col items-center justify-center bg-zinc-900 overflow-hidden">
+              {/* Live Preview Container */}
+              <div className={cn(
+                "w-full max-w-[500px] aspect-[4/3] relative overflow-hidden",
+                highAngle ? "shadow-[0_0_50px_rgba(239,68,68,0.3)]" : "shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+              )}>
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
                 
-                <div className="flex gap-4 w-full md:w-auto">
-                  <div className="space-y-4 flex-1">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                      <ChevronUp size={12} className="text-red-500" /> High Angle
-                    </label>
-                    <button onClick={() => setHighAngle(!highAngle)} className={cn(
-                      "w-full h-16 rounded border-4 transition-all flex flex-col items-center justify-center",
-                      highAngle ? "bg-red-500 border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
-                    )}>
-                      <span className="text-[10px] font-black uppercase">{highAngle ? 'ON' : 'OFF'}</span>
-                    </button>
+                {isFlashing && <div className="absolute inset-0 bg-white z-50 camera-flash" />}
+                
+                {isCountingDown && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-40 backdrop-blur-[2px]">
+                    <span className="text-white text-9xl font-black italic">{countdown}</span>
                   </div>
-                  <div className="space-y-4 flex-1">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                      <RefreshCw size={12} className="text-emerald-500" /> Camera
-                    </label>
-                    <div className="flex flex-col gap-2">
-                      <button onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')} className={cn(
-                        "w-full h-12 rounded border-4 transition-all flex flex-col items-center justify-center",
-                        facingMode === 'environment' ? "bg-black border-black text-white shadow-[4px_4px_0px_black]" : "bg-white border-neutral-100 text-neutral-300"
-                      )}>
-                        <span className="text-[8px] font-black uppercase">{facingMode === 'user' ? 'FRONT' : 'BACK'}</span>
-                      </button>
-                      <div className="flex gap-2">
-                        {[0.5, 1].map(z => (
-                          <button key={z} onClick={() => setZoomLevel(z)} className={cn(
-                            "flex-1 h-8 rounded border-2 text-[8px] font-black transition-all",
-                            zoomLevel === z ? "bg-emerald-500 border-black text-white" : "bg-white border-neutral-100 text-neutral-300"
-                          )}>{z}X</button>
+                )}
+                
+                {isProcessing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-50 backdrop-blur-[4px]">
+                    <Loader2 className="w-12 h-12 text-white animate-spin mb-4" />
+                    <span className="text-white text-xs font-black uppercase tracking-widest">Processing AI...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* LIVE SETTINGS OVERLAY */}
+              {showSettings && (
+                <div className="absolute bottom-24 left-4 right-4 bg-white/95 backdrop-blur border-4 border-black p-4 z-50 animate-in slide-in-from-bottom-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-black text-xs uppercase italic">Live Settings</h3>
+                    <button onClick={() => setShowSettings(false)} className="text-xs font-black uppercase underline">Close</button>
+                  </div>
+                  
+                  <div className="space-y-4 max-h-[40vh] overflow-y-auto">
+                    {/* Hardware Selection */}
+                    <div>
+                      <p className="control-group-label">Hardware</p>
+                      <div className="grid grid-cols-3 gap-1">
+                        {cameras.map(c => (
+                          <button key={c} onClick={() => setCameraModel(c)} className={cn(
+                            "py-1 rounded border-2 text-[7px] font-black uppercase",
+                            cameraModel === c ? "bg-black border-black text-white" : "border-neutral-200 bg-white"
+                          )}>{c}</button>
                         ))}
+                      </div>
+                    </div>
+
+                    {/* Style Selection */}
+                    <div>
+                      <p className="control-group-label">Style</p>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(Object.keys(styleIcons) as ShootingStyle[]).map(s => (
+                          <button key={s} onClick={() => setShootingStyle(s)} className={cn(
+                            "py-1 rounded border-2 text-[7px] font-black uppercase",
+                            shootingStyle === s ? "bg-blue-500 border-black text-white" : "border-neutral-200 bg-white"
+                          )}>{s}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* High Angle Toggle */}
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <p className="control-group-label">Angle</p>
+                        <button onClick={() => setHighAngle(!highAngle)} className={cn(
+                          "w-full py-2 rounded border-2 font-black text-[8px] uppercase",
+                          highAngle ? "bg-red-500 text-white border-black" : "bg-white border-neutral-200"
+                        )}>High Angle: {highAngle ? 'ON' : 'OFF'}</button>
+                      </div>
+                      <div className="flex-1">
+                        <p className="control-group-label">Frames</p>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4].map(n => (
+                            <button key={n} onClick={() => setFrameCount(n)} className={cn(
+                              "flex-1 py-2 rounded border-2 font-black text-[8px]",
+                              frameCount === n ? "bg-black text-white" : "bg-white border-neutral-200"
+                            )}>{n}</button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {highAngle && (
-                <div className="space-y-4 animate-in slide-in-from-top duration-300">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <ImageIcon size={12} className="text-red-500" /> Environment
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => setHighAngleBG('red-cube')} className={cn(
-                      "py-3 rounded border-2 font-black uppercase text-[10px] transition-all",
-                      highAngleBG === 'red-cube' ? "bg-red-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
-                    )}>Red Cube</button>
-                    <button onClick={() => setHighAngleBG('curtain')} className={cn(
-                      "py-3 rounded border-2 font-black uppercase text-[10px] transition-all",
-                      highAngleBG === 'curtain' ? "bg-slate-500 border-black text-white shadow-[3px_3px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
-                    )}>Curtain</button>
-                  </div>
-                </div>
               )}
 
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                  <Layers size={12} className="text-blue-500" /> Styles
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(Object.keys(styleIcons) as ShootingStyle[]).map(s => {
-                    const Icon = styleIcons[s];
-                    return (
-                      <button key={s} onClick={() => setShootingStyle(s)} className={cn(
-                        "flex flex-col items-center gap-1 py-3 rounded border-2 transition-all",
-                        shootingStyle === s ? "bg-blue-500 border-black text-white shadow-[2px_2px_0px_black]" : "border-neutral-100 bg-white text-neutral-500"
-                      )}>
-                        <Icon size={14} />
-                        <span className="text-[8px] font-black uppercase">{s}</span>
-                      </button>
-                    )
-                  })}
-                </div>
+              {/* SHUTTER BAR */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-zinc-800 border-t-4 border-black flex items-center justify-between">
+                 <button onClick={() => { if(stream) stream.getTracks().forEach(t => t.stop()); setStep('setup'); }} className="text-white/50 hover:text-white transition-colors">
+                    <RefreshCw size={24} />
+                 </button>
+
+                 <div className="relative">
+                    <button 
+                      onClick={runCaptureSequence} 
+                      disabled={isCountingDown || isProcessing || capturedFrames.length >= frameCount} 
+                      className="w-16 h-16 rounded-full bg-red-600 border-4 border-black shadow-[0_4px_0px_#450a0a] active:translate-y-1 active:shadow-none transition-all disabled:opacity-50" 
+                    />
+                 </div>
+
+                 <div className="w-6" /> {/* Spacer */}
               </div>
-
-              <div className="flex gap-6">
-                <div className="flex-1 space-y-4">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                    <Grid size={12} className="text-blue-500" /> Frames
-                  </label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4].map(n => (
-                      <button key={n} onClick={() => setFrameCount(n)} className={cn(
-                        "flex-1 py-3 rounded border-2 transition-all font-black",
-                        frameCount === n ? "bg-black border-black text-white" : "border-neutral-100 bg-white text-neutral-500"
-                      )}>{n}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button onClick={() => { setCapturedFrames([]); setStep('shooting'); }} className="w-full bg-blue-500 text-white font-black py-6 rounded border-4 border-black shadow-[8px_8px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all text-2xl italic tracking-tighter uppercase">
-              Start Session
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* --- SHOOTING --- */}
-      {step === 'shooting' && (
-        <div className="flex-1 flex flex-col p-4 animate-in zoom-in duration-300">
-           <div className="flex-1 flex flex-col items-center justify-center max-w-[450px] mx-auto w-full">
-              <div className="w-full vbooth-frame p-2 mb-6">
-                 <div className="vbooth-marquee text-lg">LIVE FEED</div>
-              </div>
-              
-              <div className="relative w-full aspect-square retro-body p-4 flex flex-col items-center shadow-2xl overflow-hidden">
-                <div className={cn(
-                  "w-full h-full border-4 border-black overflow-hidden relative",
-                  highAngle ? "bg-red-900" : "bg-black"
-                )}>
-                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1] opacity-90" />
-                  {isFlashing && <div className="absolute inset-0 bg-white z-50 camera-flash" />}
-                  {isCountingDown && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-40 backdrop-blur-[2px]">
-                      <span className="text-white text-9xl font-black italic">{countdown}</span>
-                    </div>
-                  )}
-                  {isProcessing && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-50 backdrop-blur-[4px]">
-                      <Loader2 className="w-12 h-12 text-white animate-spin mb-4" />
-                      <span className="text-white text-xs font-black uppercase tracking-widest">Processing AI...</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="vbooth-checkered-floor absolute bottom-0 left-0 right-0" />
-              </div>
-
-              <div className="mt-8 flex flex-col items-center gap-2">
-                 <button onClick={runCaptureSequence} disabled={isCountingDown || isProcessing || capturedFrames.length >= frameCount} className="w-20 h-20 rounded-full bg-red-600 border-4 border-black shadow-[0_8px_0px_#450a0a] active:translate-y-2 active:shadow-none transition-all disabled:opacity-50" />
-                 <p className="text-[10px] font-black uppercase mt-4">{isProcessing ? 'Developing...' : (capturedFrames.length < frameCount ? `Shot ${capturedFrames.length + 1} / ${frameCount}` : 'Done!')}</p>
-              </div>
-
-              <button onClick={() => { if(stream) stream.getTracks().forEach(t => t.stop()); setStep('setup'); }} className="mt-8 text-neutral-400 font-black flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                <RefreshCw size={12} /> Cancel
-              </button>
            </div>
         </div>
       )}
 
-      {/* --- LAB --- */}
+      {/* --- LAB (RESULTS) --- */}
       {step === 'lab' && (
         <div className="flex-1 flex flex-col p-4 md:p-10 overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-500 touch-pan-y">
           <header className="text-center py-6">
