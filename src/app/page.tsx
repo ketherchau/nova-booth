@@ -18,7 +18,6 @@ interface PhotoSession {
   frames: string[];
   style: ShootingStyle;
   camera: CameraModel;
-  frameDesign: FrameDesign;
   timestamp: number;
 }
 
@@ -129,7 +128,7 @@ export default function PhotoBooth() {
     setCapturedFrames(prev => {
       const next = [...prev, url];
       if (next.length === frameCount) {
-        setSessions(s => [{ id: Math.random().toString(36).substr(2, 9), frames: next, style: shootingStyle, camera: cameraModel, frameDesign, timestamp: Date.now() }, ...s]);
+        setSessions(s => [{ id: Math.random().toString(36).substr(2, 9), frames: next, style: shootingStyle, camera: cameraModel, timestamp: Date.now() }, ...s]);
         setTimeout(() => { setStep('lab'); confetti(); }, 500);
       }
       return next;
@@ -176,8 +175,8 @@ export default function PhotoBooth() {
                 <div className="flex flex-1 border-t-8 border-[#0c0c0c] rounded-b-[30px] overflow-hidden">
                   <div className="w-20 border-r-8 border-[#0c0c0c] flex flex-col">
                     <div className="booth-paper-sign text-center border-b-4 border-[#0c0c0c] py-4">
-                      <div className="text-2xl font-black italic">4 For FREE</div>
-                      <div className="text-[7px] font-black uppercase">Photographs</div>
+                      <div className="text-lg font-black italic font-serif">4 For FREE</div>
+                      <div className="text-[7px] font-black uppercase font-serif">Photographs</div>
                     </div>
                     <div className="flex-1 p-2 bg-[#d6ded9] flex flex-col gap-1 opacity-20">
                       {[1,2,3,4].map(i => <div key={i} className="w-full aspect-[3/4] bg-neutral-800" />)}
@@ -225,9 +224,6 @@ export default function PhotoBooth() {
             <div><p className="text-[8px] font-black text-white/40 uppercase mb-2 tracking-widest">Style</p>
               <div className="horizontal-scroller">{styles.map(s => <button key={s} onClick={() => setShootingStyle(s)} className={cn("pill-button", shootingStyle === s && "active")}>{s}</button>)}</div>
             </div>
-            <div><p className="text-[8px] font-black text-white/40 uppercase mb-2 tracking-widest">Frame Design</p>
-              <div className="horizontal-scroller">{designs.map(d => <button key={d.id} onClick={() => setFrameDesign(d.id)} className={cn("pill-button capitalize", frameDesign === d.id && "active")}>{d.id.replace('-',' ')}</button>)}</div>
-            </div>
           </div>
           <div className="shooting-footer safe-bottom">
             <div className="flex-1 flex justify-center"><button onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')} className="p-4 text-white/60"><RefreshCw size={24} /></button></div>
@@ -239,32 +235,51 @@ export default function PhotoBooth() {
 
       {step === 'lab' && (
         <div className="flex-1 flex flex-col p-4 overflow-y-auto safe-bottom">
-          <header className="text-center py-8"><h2 className="text-4xl font-black italic tracking-tighter uppercase">DEVELOPED</h2></header>
+          <header className="text-center py-8">
+            <h2 className="text-4xl font-black italic tracking-tighter uppercase">DEVELOPED</h2>
+            <div className="mt-4 flex flex-col items-center">
+              <p className="text-[8px] font-black text-neutral-400 uppercase mb-2 tracking-widest">Select Frame Design</p>
+              <div className="horizontal-scroller w-full max-w-sm">
+                {designs.map(d => (
+                  <button 
+                    key={d.id} 
+                    onClick={() => setFrameDesign(d.id)} 
+                    className={cn(
+                      "pill-button capitalize border-black/20 text-black", 
+                      frameDesign === d.id && "bg-black text-white border-black"
+                    )}
+                  >
+                    {d.id.replace('-',' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
           <div className="flex-1 flex flex-col items-center gap-12 pb-32">
             {sessions.map(s => (
               <div key={s.id} className="flex flex-col items-center gap-6 w-full max-w-sm">
                 <div className={cn("w-full transition-all duration-500", 
-                  s.frameDesign === 'classic-strip' && "bg-black p-4 rounded-sm flex flex-col gap-4",
-                  s.frameDesign === 'polaroid' && "bg-white p-4 pb-12 shadow-xl border-b-[20px] border-white",
-                  s.frameDesign === 'minimalist' && "bg-transparent border border-black/10 p-2 flex flex-col gap-2",
-                  s.frameDesign === 'floral' && "bg-emerald-50 p-6 rounded-3xl border-8 border-emerald-100 flex flex-col gap-4 relative overflow-hidden",
-                  s.frameDesign === 'geometric' && "bg-zinc-900 p-4 border-[12px] border-blue-500 flex flex-col gap-4",
-                  s.frameDesign === 'instagram' && "bg-white p-3 rounded-lg shadow-md border border-zinc-200 flex flex-col gap-2",
-                  s.frameDesign === 'glitter' && "bg-amber-50 p-6 border-4 border-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.3)] flex flex-col gap-4",
-                  s.frameDesign === 'boho' && "bg-[#fdf6e3] p-6 border-x-8 border-[#d4af37]/20 flex flex-col gap-4",
-                  s.frameDesign === 'wedding' && "bg-white p-8 border-double border-4 border-zinc-200 flex flex-col gap-6",
-                  s.frameDesign === 'comic' && "bg-yellow-400 p-4 border-4 border-black flex flex-col gap-4 shadow-[8px_8px_0px_black]"
+                  frameDesign === 'classic-strip' && "bg-black p-4 rounded-sm flex flex-col gap-4",
+                  frameDesign === 'polaroid' && "bg-white p-4 pb-12 shadow-xl border-b-[20px] border-white",
+                  frameDesign === 'minimalist' && "bg-transparent border border-black/10 p-2 flex flex-col gap-2",
+                  frameDesign === 'floral' && "bg-emerald-50 p-6 rounded-3xl border-8 border-emerald-100 flex flex-col gap-4 relative overflow-hidden",
+                  frameDesign === 'geometric' && "bg-zinc-900 p-4 border-[12px] border-blue-500 flex flex-col gap-4",
+                  frameDesign === 'instagram' && "bg-white p-3 rounded-lg shadow-md border border-zinc-200 flex flex-col gap-2",
+                  frameDesign === 'glitter' && "bg-amber-50 p-6 border-4 border-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.3)] flex flex-col gap-4",
+                  frameDesign === 'boho' && "bg-[#fdf6e3] p-6 border-x-8 border-[#d4af37]/20 flex flex-col gap-4",
+                  frameDesign === 'wedding' && "bg-white p-8 border-double border-4 border-zinc-200 flex flex-col gap-6",
+                  frameDesign === 'comic' && "bg-yellow-400 p-4 border-4 border-black flex flex-col gap-4 shadow-[8px_8px_0px_black]"
                 )}>
                   {s.frames.map((f, i) => (
                     <div key={i} className={cn("w-full overflow-hidden", 
-                      s.frameDesign === 'polaroid' && "aspect-square",
-                      s.frameDesign === 'instagram' && "aspect-square rounded-sm",
-                      s.frameDesign === 'comic' && "border-2 border-black rotate-1",
+                      frameDesign === 'polaroid' && "aspect-square",
+                      frameDesign === 'instagram' && "aspect-square rounded-sm",
+                      frameDesign === 'comic' && "border-2 border-black rotate-1",
                       "aspect-[4/3] bg-zinc-900"
                     )}><img src={f} className="w-full h-full object-cover" /></div>
                   ))}
-                  {s.frameDesign === 'instagram' && <div className="flex gap-3 px-1"><Heart size={16} /><Star size={16} /></div>}
-                  {s.frameDesign === 'wedding' && <div className="text-center italic font-serif text-sm border-t pt-4">Together Forever</div>}
+                  {frameDesign === 'instagram' && <div className="flex gap-3 px-1"><Heart size={16} /><Star size={16} /></div>}
+                  {frameDesign === 'wedding' && <div className="text-center italic font-serif text-sm border-t pt-4">Together Forever</div>}
                 </div>
                 <div className="flex gap-4">
                   <button onClick={() => {const l=document.createElement('a');l.href=s.frames[0];l.download='strip.jpg';l.click();}} className="hidden md:flex bg-white p-4 rounded-full shadow-lg border-2 border-black"><Download size={20} /></button>
