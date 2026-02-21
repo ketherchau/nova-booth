@@ -174,9 +174,8 @@ export default function PhotoBooth() {
                 <div className="booth-sign-main">Photographs</div>
                 <div className="flex flex-1 border-t-8 border-[#0c0c0c] rounded-b-[30px] overflow-hidden">
                   <div className="w-20 border-r-8 border-[#0c0c0c] flex flex-col">
-                    <div className="booth-paper-sign text-center border-b-4 border-[#0c0c0c] py-4">
-                      <div className="text-lg font-black italic font-serif">4 For FREE</div>
-                      <div className="text-[7px] font-black uppercase font-serif">Photographs</div>
+                    <div className="booth-paper-sign text-center border-b-4 border-[#0c0c0c] py-6">
+                      <div className="text-xl font-black italic font-serif">4 For FREE</div>
                     </div>
                     <div className="flex-1 p-2 bg-[#d6ded9] flex flex-col gap-1 opacity-20">
                       {[1,2,3,4].map(i => <div key={i} className="w-full aspect-[3/4] bg-neutral-800" />)}

@@ -6,13 +6,13 @@
 }
 
 :root {
-  --background: #f4e4bc; /* Vintage Paper */
+  --background: #e8dcc4; /* Darker, more aged vintage paper */
   --foreground: #2d2d2d;
   --booth-black: #0c0c0c;
-  --booth-gold: #c7a86b;
-  --panel-mint: #d6e3db;
-  --curtain-red: #c23e33;
-  --paper-cream: #f7efe0;
+  --booth-gold: #b5955a; /* Slightly desaturated gold */
+  --panel-mint: #b2c2b9; /* More aged/muted seafoam */
+  --curtain-red: #a33229; /* Deeper, more dried-blood red */
+  --paper-cream: #f2e6d0; /* Aged yellowed paper */
 }
 
 body {
