@@ -11,7 +11,7 @@ type CameraModel =
   | 'Normal' | 'SX-70' | '600 Series' | 'Spectra' | 'i-Type' | 'Go' | 'Rollfilm' | 'Packfilm' | 'Flip' | 'I-2' | 'Impulse';
 
 type FrameDesign = 
-  | 'classic-strip' | 'polaroid' | 'minimalist' | 'floral' | 'geometric' | 'instagram' | 'glitter' | 'boho' | 'wedding' | 'comic';
+  | 'classic-strip' | 'polaroid' | 'minimalist' | 'floral' | 'geometric' | 'instagram' | 'glitter' | 'boho' | 'wedding' | 'comic' | 'film-roll';
 
 interface PhotoSession {
   id: string;
@@ -241,7 +241,7 @@ export default function PhotoBooth() {
   const cameras: CameraModel[] = ['Normal', 'SX-70', '600 Series', 'Spectra', 'i-Type', 'Go', 'Rollfilm', 'Packfilm', 'Flip', 'I-2', 'Impulse'];
   const styles: ShootingStyle[] = ['standard', 'classic', 'FQS', 'OFM', 'retro-grain', 'cyberpunk', 'vivid', 'dreamy', 'noir'];
   const designs: {id: FrameDesign, icon: any}[] = [
-    {id: 'classic-strip', icon: Layout}, {id: 'polaroid', icon: ImageIcon}, {id: 'minimalist', icon: X},
+    {id: 'classic-strip', icon: Layout}, {id: 'film-roll', icon: ImageIcon}, {id: 'polaroid', icon: ImageIcon}, {id: 'minimalist', icon: X},
     {id: 'floral', icon: Flower}, {id: 'geometric', icon: Layout}, {id: 'instagram', icon: Instagram},
     {id: 'glitter', icon: Sparkles}, {id: 'boho', icon: Heart}, {id: 'wedding', icon: Star}, {id: 'comic', icon: Zap}
   ];
@@ -361,6 +361,52 @@ export default function PhotoBooth() {
                   {frameDesign === 'instagram' && <div className="flex gap-3 px-1"><Heart size={16} /><Star size={16} /></div>}
                   {frameDesign === 'wedding' && <div className="text-center italic font-serif text-sm border-t pt-4">Together Forever</div>}
                 </div>
+                {/* Film Roll Overlay (Conditional) */}
+                {frameDesign === 'film-roll' && (
+                  <div className="w-full bg-[#96988d] p-8 flex gap-4 items-center animate-in fade-in duration-500 rounded-lg">
+                    <div className="flex-1 vertical-text font-black text-6xl text-white opacity-90 tracking-tighter mix-blend-overlay">
+                      memories
+                    </div>
+                    <div className="photobooth-strip-film bg-black p-2 flex flex-col gap-2 border-x-[12px] border-black relative">
+                       {/* Film Sprocket Holes (CSS generated) */}
+                       <div className="absolute top-0 bottom-0 -left-10 w-8 flex flex-col justify-around py-4 opacity-70">
+                          {Array.from({length: 12}).map((_, i) => <div key={i} className="w-4 h-3 bg-white/90 rounded-sm" />)}
+                       </div>
+                       <div className="absolute top-0 bottom-0 -right-10 w-8 flex flex-col justify-around py-4 opacity-70">
+                          {Array.from({length: 12}).map((_, i) => <div key={i} className="w-4 h-3 bg-white/90 rounded-sm" />)}
+                       </div>
+                       {s.frames.map((f, i) => (
+                        <div key={i} className="w-48 aspect-square overflow-hidden bg-zinc-900 border-y-4 border-black">
+                          <img src={f} className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {frameDesign !== 'film-roll' && (
+                  <div className={cn("w-full transition-all duration-500", 
+                    frameDesign === 'classic-strip' && "bg-black p-4 rounded-sm flex flex-col gap-4",
+                    frameDesign === 'polaroid' && "bg-white p-4 pb-12 shadow-xl border-b-[20px] border-white",
+                    frameDesign === 'minimalist' && "bg-transparent border border-black/10 p-2 flex flex-col gap-2",
+                    frameDesign === 'floral' && "bg-emerald-50 p-6 rounded-3xl border-8 border-emerald-100 flex flex-col gap-4 relative overflow-hidden",
+                    frameDesign === 'geometric' && "bg-zinc-900 p-4 border-[12px] border-blue-500 flex flex-col gap-4",
+                    frameDesign === 'instagram' && "bg-white p-3 rounded-lg shadow-md border border-zinc-200 flex flex-col gap-2",
+                    frameDesign === 'glitter' && "bg-amber-50 p-6 border-4 border-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.3)] flex flex-col gap-4",
+                    frameDesign === 'boho' && "bg-[#fdf6e3] p-6 border-x-8 border-[#d4af37]/20 flex flex-col gap-4",
+                    frameDesign === 'wedding' && "bg-white p-8 border-double border-4 border-zinc-200 flex flex-col gap-6",
+                    frameDesign === 'comic' && "bg-yellow-400 p-4 border-4 border-black flex flex-col gap-4 shadow-[8px_8px_0px_black]"
+                  )}>
+                    {s.frames.map((f, i) => (
+                      <div key={i} className={cn("w-full overflow-hidden aspect-[4/3] bg-zinc-900", 
+                        frameDesign === 'polaroid' && "aspect-square",
+                        frameDesign === 'instagram' && "aspect-square rounded-sm",
+                        frameDesign === 'comic' && "border-2 border-black rotate-1"
+                      )}><img src={f} className="w-full h-full object-cover" /></div>
+                    ))}
+                    {frameDesign === 'instagram' && <div className="flex gap-3 px-1"><Heart size={16} /><Star size={16} /></div>}
+                    {frameDesign === 'wedding' && <div className="text-center italic font-serif text-sm border-t pt-4">Together Forever</div>}
+                  </div>
+                )}
                 <div className="flex gap-4">
                   <button onClick={() => handleSave(s)} className="hidden md:flex bg-white p-4 rounded-full shadow-lg border-2 border-black disabled:opacity-50" disabled={isGenerating}>
                     {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
