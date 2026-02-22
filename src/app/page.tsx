@@ -11,7 +11,8 @@ type CameraModel =
   | 'Normal' | 'SX-70' | '600 Series' | 'Spectra' | 'i-Type' | 'Go' | 'Rollfilm' | 'Packfilm' | 'Flip' | 'I-2' | 'Impulse';
 
 type FrameDesign = 
-  | 'classic-strip' | 'polaroid' | 'minimalist' | 'floral' | 'geometric' | 'instagram' | 'glitter' | 'boho' | 'wedding' | 'comic' | 'film-roll';
+  | 'classic-strip' | 'polaroid' | 'minimalist' | 'floral' | 'geometric' | 'instagram' | 'glitter' | 'boho' | 'wedding' | 'comic' | 'film-roll'
+  | 'harry-potter' | 'portrait' | 'vintage' | 'sunshine';
 
 interface PhotoSession {
   id: string;
@@ -243,7 +244,8 @@ export default function PhotoBooth() {
   const designs: {id: FrameDesign, icon: any}[] = [
     {id: 'classic-strip', icon: Layout}, {id: 'film-roll', icon: ImageIcon}, {id: 'polaroid', icon: ImageIcon}, {id: 'minimalist', icon: X},
     {id: 'floral', icon: Flower}, {id: 'geometric', icon: Layout}, {id: 'instagram', icon: Instagram},
-    {id: 'glitter', icon: Sparkles}, {id: 'boho', icon: Heart}, {id: 'wedding', icon: Star}, {id: 'comic', icon: Zap}
+    {id: 'glitter', icon: Sparkles}, {id: 'boho', icon: Heart}, {id: 'wedding', icon: Star}, {id: 'comic', icon: Zap},
+    {id: 'harry-potter', icon: Zap}, {id: 'portrait', icon: ImageIcon}, {id: 'vintage', icon: RefreshCw}, {id: 'sunshine', icon: Sun}
   ];
 
   return (
@@ -361,7 +363,7 @@ export default function PhotoBooth() {
                     </div>
                   </div>
                 ) : (
-                  <div className={cn("w-full transition-all duration-500", 
+                  <div className={cn("w-full transition-all duration-500 relative", 
                     frameDesign === 'classic-strip' && "bg-black p-4 rounded-sm flex flex-col gap-4",
                     frameDesign === 'polaroid' && "bg-white p-4 pb-12 shadow-xl border-b-[20px] border-white",
                     frameDesign === 'minimalist' && "bg-transparent border border-black/10 p-2 flex flex-col gap-2",
@@ -371,17 +373,33 @@ export default function PhotoBooth() {
                     frameDesign === 'glitter' && "bg-amber-50 p-6 border-4 border-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.3)] flex flex-col gap-4",
                     frameDesign === 'boho' && "bg-[#fdf6e3] p-6 border-x-8 border-[#d4af37]/20 flex flex-col gap-4",
                     frameDesign === 'wedding' && "bg-white p-8 border-double border-4 border-zinc-200 flex flex-col gap-6",
-                    frameDesign === 'comic' && "bg-yellow-400 p-4 border-4 border-black flex flex-col gap-4 shadow-[8px_8px_0px_black]"
+                    frameDesign === 'comic' && "bg-yellow-400 p-4 border-4 border-black flex flex-col gap-4 shadow-[8px_8px_0px_black]",
+                    frameDesign === 'harry-potter' && "bg-[#2a1a14] p-6 border-[12px] border-[#d4af37]/40 shadow-2xl flex flex-col gap-4 font-serif text-[#d4af37]",
+                    frameDesign === 'portrait' && "bg-stone-100 p-10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex flex-col gap-8 border-t-[40px] border-stone-200",
+                    frameDesign === 'vintage' && "bg-[#eaddca] p-5 border-[1px] border-[#c19a6b] flex flex-col gap-4 shadow-inner",
+                    frameDesign === 'sunshine' && "bg-gradient-to-br from-yellow-200 to-orange-200 p-6 rounded-[40px] border-8 border-white flex flex-col gap-4"
                   )}>
+                    {frameDesign === 'harry-potter' && <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">Ministry of Magic</div>}
+                    {frameDesign === 'sunshine' && <div className="absolute -top-4 -right-4 text-4xl animate-pulse">☀️</div>}
+                    {frameDesign === 'sunshine' && <div className="absolute -bottom-2 -left-2 text-2xl">🌻</div>}
+                    
                     {s.frames.map((f, i) => (
-                      <div key={i} className={cn("w-full overflow-hidden aspect-[4/3] bg-zinc-900", 
+                      <div key={i} className={cn("w-full overflow-hidden aspect-[4/3] bg-zinc-900 relative", 
                         frameDesign === 'polaroid' && "aspect-square",
                         frameDesign === 'instagram' && "aspect-square rounded-sm",
-                        frameDesign === 'comic' && "border-2 border-black rotate-1"
-                      )}><img src={f} className="w-full h-full object-cover" /></div>
+                        frameDesign === 'comic' && "border-2 border-black rotate-1",
+                        frameDesign === 'harry-potter' && "sepia-[0.5] contrast-[1.2] border border-[#d4af37]/30",
+                        frameDesign === 'vintage' && "grayscale-[0.3] contrast-[0.9] brightness-[1.05]",
+                        frameDesign === 'portrait' && "aspect-[2/3] shadow-inner"
+                      )}>
+                        <img src={f} className="w-full h-full object-cover" />
+                        {frameDesign === 'harry-potter' && <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />}
+                      </div>
                     ))}
                     {frameDesign === 'instagram' && <div className="flex gap-3 px-1"><Heart size={16} /><Star size={16} /></div>}
                     {frameDesign === 'wedding' && <div className="text-center italic font-serif text-sm border-t pt-4">Together Forever</div>}
+                    {frameDesign === 'harry-potter' && <div className="text-center italic text-xl mt-2 tracking-widest font-serif">Have You Seen This Wizard?</div>}
+                    {frameDesign === 'vintage' && <div className="text-right text-[10px] font-serif opacity-40 italic">Nov. 1974</div>}
                   </div>
                 )}
                 <div className="flex gap-4">
